@@ -28,15 +28,18 @@ const LoginRegister = () => {
 
       const data = await response.json();
       if (response.ok) {
-        console.log(data);
-        localStorage.setItem('token', data.token);
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify({
+              username: data.user.name,
+              email: data.user.email
+        }));
         navigate('/main');
       } else {
         alert(data.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Eroare la conectare cu serverul');
+      alert('Server error while logging in');
     }
   };
 
@@ -56,21 +59,21 @@ const LoginRegister = () => {
 
       const data = await response.json();
       if (response.ok) {
-        alert('Înregistrare reușită!');
-        console.log(data);
+        alert('Registration successful!');
         setAction('');
       } else {
-        alert(data.message || 'Înregistrarea a eșuat');
+        alert(data.message || 'Registration failed');
       }
     } catch (error) {
       console.error('Register error:', error);
-      alert('Eroare la conectare cu serverul');
+      alert('Server error while registering');
     }
   };
 
   return (
     <div className="login-page">
       <div className={`wrapper${action}`}>
+        {/* Login Form */}
         <div className="form-box login">
           <form onSubmit={handleLogin}>
             <h1>Login</h1>
@@ -94,23 +97,21 @@ const LoginRegister = () => {
               />
               <FaLock className='icon' />
             </div>
-
             <div className="remember-forgot">
-              <label><input type="checkbox" />Remember me</label>
+              <label><input type="checkbox" /> Remember me</label>
               <a href="#">Forgot password?</a>
             </div>
-
             <button type="submit">Login</button>
-
             <div className="register-link">
               <p>Don't have an account? <a href="#" onClick={registerLink}>Register</a></p>
             </div>
           </form>
         </div>
 
+        {/* Register Form */}
         <div className="form-box register">
           <form onSubmit={handleRegister}>
-            <h1>Registration</h1>
+            <h1>Register</h1>
             <div className="input-box">
               <input
                 type="text"
@@ -141,9 +142,7 @@ const LoginRegister = () => {
               />
               <FaLock className='icon' />
             </div>
-
             <button type="submit">Register</button>
-
             <div className="register-link">
               <p>Already have an account? <a href="#" onClick={loginLink}>Login</a></p>
             </div>

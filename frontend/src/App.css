@@ -13,6 +13,13 @@
   }
 }
 
+body {
+  background-color: #121212;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+}
+
+
 .App-header {
   background-color: #282c34;
   min-height: 100vh;
