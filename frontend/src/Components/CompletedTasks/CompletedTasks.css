@@ -1,0 +1,72 @@
+body {
+    background-color: #121212;
+    color: #ffffff;
+  }
+  
+  .main-content {
+    padding: 2rem;
+    background-color: #121212;
+    min-height: 100vh;
+    padding-top: 120px;
+    
+  }
+
+
+  
+  .task-list .card {
+    background-color: #1f1f1f;
+    border-radius: 12px;
+    border: none;
+    color: #9731db;
+  
+  }
+  
+  .task-list .card h5 {
+    font-weight: 600;
+    color: #9731db;
+  }
+  
+  .task-list .card span {
+    color: #ffffff;
+  }
+  
+  .form-select {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border: 1px solid #333;
+    width: 300px;
+  }
+  
+  .btn-success {
+    background-color: #9731db;
+    border: none;
+    color: #000;
+    font-weight: 600;
+  }
+  
+  .btn-outline-danger {
+    border-color: #f36666;
+    color:#f36666;
+  }
+  
+  .btn-outline-danger:hover {
+    background-color: #900e0e;
+    color: #fff;
+  }
+  
+  .btn-outline-primary {
+    border-color: #2347d6;
+    color: #2347d6;
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: #4cc2ff;
+    color: #000;
+  }
+  
+  .completed-task-title {
+    text-decoration: line-through;
+    color: #57f0a992 !important;
+    font-weight: 600;
+  }
+  

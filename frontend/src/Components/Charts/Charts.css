@@ -1,0 +1,22 @@
+.main-content {
+    padding: 2rem;
+    background-color: #121212;
+    min-height: 100vh;
+    padding-top: 120px;
+  }
+  
+  .chart-card {
+    background-color: #1f1f1f;
+    padding: 1rem;
+    border-radius: 12px;
+    height: 260px; /* micșorată față de 320px */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  canvas {
+    flex-grow: 1;
+    max-height: 190px; /* mai mic pentru a încapă toate */
+  }
+  
