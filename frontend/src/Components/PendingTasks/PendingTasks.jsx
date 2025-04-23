@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import Navbar from '../Navbar/Navbar';
+import EditTaskModal from '../EditTaskModal/EditTaskModal';
 import './PendingTasks.css';
 
 const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
   const pendingTasks = tasks.filter(task => !task.completed);
 
-  // Paginare
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
+
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
   const indexOfLastTask = currentPage * tasksPerPage;
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
   const paginatedTasks = pendingTasks.slice(indexOfFirstTask, indexOfLastTask);
@@ -24,6 +28,7 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
       <Navbar />
       <div className="main-content container task-list">
         <h2 className="fw-bold text-white mb-4">🕒 Pending Tasks</h2>
+
         {paginatedTasks.length === 0 ? (
           <p className="text-white">No pending tasks. All done! 🎉</p>
         ) : (
@@ -37,7 +42,12 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
                     checked={task.completed}
                     onChange={() => toggleComplete(task.id)}
                   />
-                  <h5 className="mb-0">{task.title}</h5>
+                  <div>
+                    <h5 className="mb-1">{task.title}</h5>
+                    <p className="text-white mb-0 small">
+                      {task.description || <i>No description provided</i>}
+                    </p>
+                  </div>
                 </div>
                 <div className="d-flex justify-content-between text-muted small">
                   <span>📅 Created: {task.createdAt}</span>
@@ -48,12 +58,10 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
 
               <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
                 <button
-                  onClick={() =>
-                    editTask(task.id,
-                      prompt('New title:', task.title),
-                      prompt('New deadline:', task.deadline)
-                    )
-                  }
+                  onClick={() => {
+                    setSelectedTask(task);
+                    setShowEditModal(true);
+                  }}
                   className="btn btn-outline-primary btn-sm"
                 >
                   Edit
@@ -69,7 +77,6 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
           ))
         )}
 
-        {/* Paginare */}
         {totalPages > 1 && (
           <div className="d-flex justify-content-center mt-4 gap-2">
             <button
@@ -98,6 +105,17 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
           </div>
         )}
       </div>
+
+      {/* Modal Edit Task */}
+      <EditTaskModal
+        show={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={(updatedTask) => {
+          editTask(updatedTask.id, updatedTask.title, updatedTask.deadline);
+          setShowEditModal(false);
+        }}
+        task={selectedTask}
+      />
     </div>
   );
 };

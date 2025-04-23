@@ -13,6 +13,7 @@ function App() {
     {
       id: 1,
       title: 'Finish report',
+      description: 'Complete the financial report for Q1',
       priority: 'High',
       createdAt: '2025-04-20',
       deadline: '2025-04-24',
@@ -21,6 +22,7 @@ function App() {
     {
       id: 2,
       title: 'Client presentation',
+      description: 'Prepare slides and talking points for the new client',
       priority: 'Medium',
       createdAt: '2025-04-18',
       deadline: '2025-04-23',
@@ -29,6 +31,7 @@ function App() {
     {
       id: 3,
       title: 'App update',
+      description: 'Deploy the latest version of the app to production',
       priority: 'Low',
       createdAt: '2025-04-22',
       deadline: '2025-04-25',
@@ -37,6 +40,7 @@ function App() {
     {
       id: 4,
       title: 'Office supplies',
+      description: 'Order paper, pens, and coffee filters',
       priority: 'Medium',
       createdAt: '2025-04-10',
       deadline: '2025-04-26',
@@ -45,6 +49,7 @@ function App() {
     {
       id: 5,
       title: 'Server backup',
+      description: 'Ensure all critical data is backed up this week',
       priority: 'High',
       createdAt: '2025-04-21',
       deadline: '2025-04-22',
@@ -53,6 +58,7 @@ function App() {
     {
       id: 6,
       title: 'Client emails',
+      description: 'Respond to all pending client inquiries',
       priority: 'Low',
       createdAt: '2025-04-17',
       deadline: '2025-04-30',
@@ -61,6 +67,7 @@ function App() {
     {
       id: 7,
       title: 'Feature documentation',
+      description: 'Document the new features added this sprint',
       priority: 'Medium',
       createdAt: '2025-04-16',
       deadline: '2025-04-28',
@@ -69,6 +76,7 @@ function App() {
     {
       id: 8,
       title: 'New UI design',
+      description: 'Review the new design proposals and give feedback',
       priority: 'High',
       createdAt: '2025-04-15',
       deadline: '2025-04-29',
@@ -77,6 +85,7 @@ function App() {
     {
       id: 9,
       title: 'Team meeting',
+      description: 'Discuss progress and blockers with the dev team',
       priority: 'Low',
       createdAt: '2025-04-14',
       deadline: '2025-04-21',
@@ -85,6 +94,7 @@ function App() {
     {
       id: 10,
       title: 'Fix login bugs',
+      description: 'Resolve issues reported during login process',
       priority: 'High',
       createdAt: '2025-04-19',
       deadline: '2025-04-24',

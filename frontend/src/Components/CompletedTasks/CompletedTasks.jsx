@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import './CompletedTasks.css';
 
-const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
+const CompletedTasks = ({ tasks, toggleComplete, deleteTask }) => {
   const completedTasks = tasks.filter(task => task.completed);
 
-  // Paginare
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
   const indexOfLastTask = currentPage * tasksPerPage;
@@ -24,11 +23,15 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
       <Navbar />
       <div className="main-content container task-list">
         <h2 className="fw-bold text-white mb-4">✅ Completed Tasks</h2>
+
         {paginatedTasks.length === 0 ? (
           <p className="text-white">No completed tasks yet.</p>
         ) : (
           paginatedTasks.map(task => (
-            <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <div
+              key={task.id}
+              className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center"
+            >
               <div className="w-100">
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <input
@@ -37,7 +40,12 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
                     checked={task.completed}
                     onChange={() => toggleComplete(task.id)}
                   />
-                  <h5 className="mb-0 completed-task-title">{task.title}</h5>
+                  <div>
+                    <h5 className="mb-1 completed-task-title">{task.title}</h5>
+                    <p className="text-white mb-0 small">
+                      {task.description || <i>No description provided</i>}
+                    </p>
+                  </div>
                 </div>
                 <div className="d-flex justify-content-between text-muted small">
                   <span>📅 Created: {task.createdAt}</span>
@@ -47,17 +55,6 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
               </div>
 
               <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
-                <button
-                  onClick={() =>
-                    editTask(task.id,
-                      prompt('New title:', task.title),
-                      prompt('New deadline:', task.deadline)
-                    )
-                  }
-                  className="btn btn-outline-primary btn-sm"
-                >
-                  Edit
-                </button>
                 <button
                   onClick={() => deleteTask(task.id)}
                   className="btn btn-outline-danger btn-sm"
@@ -69,7 +66,7 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
           ))
         )}
 
-        {/* Paginare */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="d-flex justify-content-center mt-4 gap-2">
             <button
