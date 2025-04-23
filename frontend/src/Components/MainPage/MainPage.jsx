@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import AddTaskModal from '../AddTaskModal/AddTaskModal';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
+import {
+  getTasks,
+  createTask,
+  updateTask,
+  deleteTaskById,
+  toggleTaskStatus // Asigură-te că importi această funcție corect
+} from '../../services/taskService';
 import './MainPage.css';
 
-
-const MainPage = ({ tasks, toggleComplete, deleteTask, editTask, addTask }) => {
+const MainPage = () => {
+  const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState('deadline');
   const [filterPriority, setFilterPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -14,6 +21,57 @@ const MainPage = ({ tasks, toggleComplete, deleteTask, editTask, addTask }) => {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const tasksPerPage = 5;
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      const data = await getTasks();
+      setTasks(data);
+    } catch (err) {
+      console.error("Failed to load tasks:", err);
+    }
+  };
+
+  const handleAddTask = async (newTask) => {
+    try {
+      const created = await createTask(newTask);
+      await loadTasks(); // reîncarcă lista
+      setShowAddModal(false);
+    } catch (err) {
+      console.error("Failed to add task:", err);
+    }
+  };
+
+  const handleEditTask = async (updatedTask) => {
+    try {
+      await updateTask(updatedTask.id, updatedTask);
+      await loadTasks(); // reîncarcă lista
+      setShowEditModal(false);
+    } catch (err) {
+      console.error("Failed to edit task:", err);
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    try {
+      await deleteTaskById(id);
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    try {
+      await toggleTaskStatus(id);
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to toggle complete:", err);
+    }
+  };
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
@@ -79,20 +137,15 @@ const MainPage = ({ tasks, toggleComplete, deleteTask, editTask, addTask }) => {
                       type="checkbox"
                       className="form-check-input"
                       checked={task.completed}
-                      onChange={() => toggleComplete(task.id)}
+                      onChange={() => handleToggleComplete(task.id)}
                     />
                     <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
                       {task.title}
                     </h5>
                   </div>
-
-                  {/* Descrierea taskului */}
                   {task.description && (
-                    <p className="text-white mb-1 ps-4 small">
-                      {task.description}
-                    </p>
+                    <p className="text-white mb-1 ps-4 small">{task.description}</p>
                   )}
-
                   <div className="d-flex justify-content-between text-muted small">
                     <span>📅 Created: {task.createdAt}</span>
                     <span>⏳ Deadline: {task.deadline}</span>
@@ -109,7 +162,7 @@ const MainPage = ({ tasks, toggleComplete, deleteTask, editTask, addTask }) => {
                   >
                     Edit
                   </button>
-                  <button onClick={() => deleteTask(task.id)} className="btn btn-outline-danger btn-sm">
+                  <button onClick={() => handleDeleteTask(task.id)} className="btn btn-outline-danger btn-sm">
                     Delete
                   </button>
                 </div>
@@ -150,25 +203,13 @@ const MainPage = ({ tasks, toggleComplete, deleteTask, editTask, addTask }) => {
       <AddTaskModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={(newTask) => {
-          const task = {
-            id: Date.now(),
-            ...newTask,
-            createdAt: new Date().toISOString().slice(0, 10),
-            completed: false
-          };
-          addTask(task);
-          setShowAddModal(false);
-        }}
+        onSave={handleAddTask}
       />
 
       <EditTaskModal
         show={showEditModal}
         onClose={() => setShowEditModal(false)}
-        onSave={(updatedTask) => {
-          editTask(updatedTask.id, updatedTask.title, updatedTask.deadline);
-          setShowEditModal(false);
-        }}
+        onSave={handleEditTask}
         task={selectedTask}
       />
     </div>

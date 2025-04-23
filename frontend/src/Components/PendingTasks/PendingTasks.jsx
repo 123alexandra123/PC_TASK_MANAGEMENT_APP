@@ -1,21 +1,67 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
+import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService'; // Importăm funcțiile pentru a obține și șterge task-urile
 import './PendingTasks.css';
 
-const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
-  const pendingTasks = tasks.filter(task => !task.completed);
+const PendingTasks = ({ deleteTask, editTask }) => {
+  const [tasksState, setTasksState] = useState([]); // Stocăm task-urile nefinalizate
 
+  // Paginare
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
 
+  // Modal și task selectat pentru editare
   const [selectedTask, setSelectedTask] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Încarcă task-urile pendente de la backend
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      const data = await getTasks(); // Obținem task-urile de la backend
+      const pendingTasks = data.filter(task => !task.completed); // Filtrăm doar task-urile nefinalizate
+      setTasksState(pendingTasks);
+    } catch (err) {
+      console.error("Failed to load tasks:", err); // Dacă se întâmplă o eroare
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    try {
+      await deleteTaskById(id); // Ștergem task-ul de la backend
+      await loadTasks(); // Reîncarcă lista de task-uri după ștergere
+    } catch (err) {
+      console.error("Failed to delete task:", err); // Dacă se întâmplă o eroare la ștergere
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    try {
+      await toggleTaskStatus(id); // Schimbăm statusul unui task la backend
+      await loadTasks(); // Reîncarcă lista după ce s-a schimbat statusul task-ului
+    } catch (err) {
+      console.error("Failed to toggle complete:", err); // Dacă se întâmplă o eroare
+    }
+  };
+
+  const handleEditTask = async (updatedTask) => {
+    try {
+      await editTask(updatedTask.id, updatedTask); // Actualizăm task-ul la backend
+      setShowEditModal(false); // Închidem modalul după actualizare
+      await loadTasks(); // Reîncarcă lista de task-uri
+    } catch (err) {
+      console.error("Failed to edit task:", err); // Dacă se întâmplă o eroare
+    }
+  };
+
   const indexOfLastTask = currentPage * tasksPerPage;
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const paginatedTasks = pendingTasks.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(pendingTasks.length / tasksPerPage);
+  const paginatedTasks = tasksState.slice(indexOfFirstTask, indexOfLastTask);
+  const totalPages = Math.ceil(tasksState.length / tasksPerPage);
 
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -40,7 +86,7 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
                     type="checkbox"
                     className="form-check-input"
                     checked={task.completed}
-                    onChange={() => toggleComplete(task.id)}
+                    onChange={() => handleToggleComplete(task.id)} // Toggle complete pe frontend
                   />
                   <div>
                     <h5 className="mb-1">{task.title}</h5>
@@ -67,7 +113,7 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
                   Edit
                 </button>
                 <button
-                  onClick={() => deleteTask(task.id)}
+                  onClick={() => handleDeleteTask(task.id)} // Ștergem task-ul
                   className="btn btn-outline-danger btn-sm"
                 >
                   Delete
@@ -77,6 +123,7 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
           ))
         )}
 
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="d-flex justify-content-center mt-4 gap-2">
             <button
@@ -111,8 +158,7 @@ const PendingTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
         show={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSave={(updatedTask) => {
-          editTask(updatedTask.id, updatedTask.title, updatedTask.deadline);
-          setShowEditModal(false);
+          handleEditTask(updatedTask);
         }}
         task={selectedTask}
       />

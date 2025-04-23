@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// App.jsx
+import React, { useEffect, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Routes, Route } from 'react-router-dom';
 import LoginRegister from './Components/LoginRegister/LoginRegister';
@@ -6,130 +7,66 @@ import MainPage from './Components/MainPage/MainPage';
 import CompletedTasks from './Components/CompletedTasks/CompletedTasks';
 import PendingTasks from './Components/PendingTasks/PendingTasks';
 import Charts from './Components/Charts/Charts';
-import Profile from './Components/Profile/Profile'; // nou
+import Profile from './Components/Profile/Profile';
 
 function App() {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: 'Finish report',
-      description: 'Complete the financial report for Q1',
-      priority: 'High',
-      createdAt: '2025-04-20',
-      deadline: '2025-04-24',
-      completed: false
-    },
-    {
-      id: 2,
-      title: 'Client presentation',
-      description: 'Prepare slides and talking points for the new client',
-      priority: 'Medium',
-      createdAt: '2025-04-18',
-      deadline: '2025-04-23',
-      completed: false
-    },
-    {
-      id: 3,
-      title: 'App update',
-      description: 'Deploy the latest version of the app to production',
-      priority: 'Low',
-      createdAt: '2025-04-22',
-      deadline: '2025-04-25',
-      completed: false
-    },
-    {
-      id: 4,
-      title: 'Office supplies',
-      description: 'Order paper, pens, and coffee filters',
-      priority: 'Medium',
-      createdAt: '2025-04-10',
-      deadline: '2025-04-26',
-      completed: false
-    },
-    {
-      id: 5,
-      title: 'Server backup',
-      description: 'Ensure all critical data is backed up this week',
-      priority: 'High',
-      createdAt: '2025-04-21',
-      deadline: '2025-04-22',
-      completed: false
-    },
-    {
-      id: 6,
-      title: 'Client emails',
-      description: 'Respond to all pending client inquiries',
-      priority: 'Low',
-      createdAt: '2025-04-17',
-      deadline: '2025-04-30',
-      completed: false
-    },
-    {
-      id: 7,
-      title: 'Feature documentation',
-      description: 'Document the new features added this sprint',
-      priority: 'Medium',
-      createdAt: '2025-04-16',
-      deadline: '2025-04-28',
-      completed: false
-    },
-    {
-      id: 8,
-      title: 'New UI design',
-      description: 'Review the new design proposals and give feedback',
-      priority: 'High',
-      createdAt: '2025-04-15',
-      deadline: '2025-04-29',
-      completed: false
-    },
-    {
-      id: 9,
-      title: 'Team meeting',
-      description: 'Discuss progress and blockers with the dev team',
-      priority: 'Low',
-      createdAt: '2025-04-14',
-      deadline: '2025-04-21',
-      completed: false
-    },
-    {
-      id: 10,
-      title: 'Fix login bugs',
-      description: 'Resolve issues reported during login process',
-      priority: 'High',
-      createdAt: '2025-04-19',
-      deadline: '2025-04-24',
-      completed: false
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/tasks');
+      const data = await res.json();
+      setTasks(data);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
     }
-  ]);
-
-  const toggleComplete = (id) => {
-    setTasks(tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const addTask = async (newTask) => {
+    try {
+      await fetch('http://localhost:5000/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask),
+      });
+      fetchTasks();
+    } catch (err) {
+      console.error("Error adding task:", err);
+    }
   };
 
-  const editTask = (id, newTitle, newDeadline) => {
-    if (!newTitle || !newDeadline) return;
-    setTasks(tasks.map(task =>
-      task.id === id ? { ...task, title: newTitle, deadline: newDeadline } : task
-    ));
+  const editTask = async (id, updatedTask) => {
+    try {
+      await fetch(`http://localhost:5000/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      });
+      fetchTasks();
+    } catch (err) {
+      console.error("Error editing task:", err);
+    }
   };
 
-  const addTask = (title) => {
-    if (!title) return;
-    const newTask = {
-      id: Date.now(),
-      title,
-      priority: 'Medium',
-      createdAt: new Date().toISOString().slice(0, 10),
-      deadline: '2025-04-30',
-      completed: false
-    };
-    setTasks([...tasks, newTask]);
+  const deleteTask = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/tasks/${id}`, {
+        method: 'DELETE',
+      });
+      fetchTasks();
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  };
+
+  const toggleComplete = async (id) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    await editTask(task.id, { ...task, completed: !task.completed });
   };
 
   return (
@@ -155,7 +92,6 @@ function App() {
             tasks={tasks}
             toggleComplete={toggleComplete}
             deleteTask={deleteTask}
-            editTask={editTask}
           />
         }
       />
@@ -171,7 +107,7 @@ function App() {
         }
       />
       <Route path="/charts" element={<Charts tasks={tasks} />} />
-      <Route path="/profile" element={<Profile />} /> 
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   );
 }
