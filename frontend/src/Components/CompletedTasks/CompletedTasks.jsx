@@ -1,17 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
+import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService'; // Importăm funcțiile pentru a obține și șterge task-urile
 import './CompletedTasks.css';
 
-const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
-  const completedTasks = tasks.filter(task => task.completed);
+const CompletedTasks = () => {
+  const [tasksState, setTasksState] = useState([]); // Stocăm task-urile completate
 
   // Paginare
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
+
+  // Încarcă task-urile completate de la backend
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      const data = await getTasks(); // Obținem task-urile de la backend
+      const completedTasks = data.filter(task => task.completed); // Filtrăm doar task-urile completate
+      setTasksState(completedTasks);
+    } catch (err) {
+      console.error("Failed to load tasks:", err); // Dacă se întâmplă o eroare
+    }
+  };
+
+  const handleDeleteTask = async (id) => {
+    try {
+      await deleteTaskById(id); // Ștergem task-ul de la backend
+      await loadTasks(); // Reîncarcă lista de task-uri după ștergere
+    } catch (err) {
+      console.error("Failed to delete task:", err); // Dacă se întâmplă o eroare la ștergere
+    }
+  };
+
+  const handleToggleComplete = async (id) => {
+    try {
+      await toggleTaskStatus(id); // Schimbăm statusul unui task la backend
+      await loadTasks(); // Reîncarcă lista după ce s-a schimbat statusul task-ului
+    } catch (err) {
+      console.error("Failed to toggle complete:", err); // Dacă se întâmplă o eroare
+    }
+  };
+
   const indexOfLastTask = currentPage * tasksPerPage;
   const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const paginatedTasks = completedTasks.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(completedTasks.length / tasksPerPage);
+  const paginatedTasks = tasksState.slice(indexOfFirstTask, indexOfLastTask);
+  const totalPages = Math.ceil(tasksState.length / tasksPerPage);
 
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -35,9 +70,14 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
                     type="checkbox"
                     className="form-check-input"
                     checked={task.completed}
-                    onChange={() => toggleComplete(task.id)}
+                    onChange={() => handleToggleComplete(task.id)} // Schimbăm statusul unui task la backend
                   />
-                  <h5 className="mb-0 completed-task-title">{task.title}</h5>
+                  <div>
+                    <h5 className="mb-1 completed-task-title">{task.title}</h5>
+                    <p className="text-white mb-0 small">
+                      {task.description || <i>No description provided</i>}
+                    </p>
+                  </div>
                 </div>
                 <div className="d-flex justify-content-between text-muted small">
                   <span>📅 Created: {task.createdAt}</span>
@@ -48,18 +88,7 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
 
               <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
                 <button
-                  onClick={() =>
-                    editTask(task.id,
-                      prompt('New title:', task.title),
-                      prompt('New deadline:', task.deadline)
-                    )
-                  }
-                  className="btn btn-outline-primary btn-sm"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => deleteTask(task.id)}
+                  onClick={() => handleDeleteTask(task.id)} // Ștergem task-ul
                   className="btn btn-outline-danger btn-sm"
                 >
                   Delete
@@ -69,7 +98,7 @@ const CompletedTasks = ({ tasks, toggleComplete, deleteTask, editTask }) => {
           ))
         )}
 
-        {/* Paginare */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="d-flex justify-content-center mt-4 gap-2">
             <button

@@ -1,9 +1,9 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const db = require("./db"); // Importă conexiunea MySQL
+const db = require("./db"); // Conexiunea MySQL
 const authRoutes = require("./routes/auth");
-
+const taskRoutes = require("./routes/tasks"); 
 const app = express();
 
 // Middleware
@@ -12,6 +12,7 @@ app.use(cors());
 
 // Rute
 app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes); //ruta pentru task-uri
 
 // Pornire server
 const PORT = process.env.PORT || 5000;
