@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
@@ -25,18 +25,46 @@ ChartJS.register(
   LineElement
 );
 
-const Charts = ({ tasks }) => {
+const Charts = () => {
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/tasks');
+        const data = await res.json();
+        setTasks(data);
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
   const priorityLabels = ['High', 'Medium', 'Low'];
   const priorityCounts = priorityLabels.map(
-    (p) => tasks.filter((t) => t.priority === p).length
+    (priority) => tasks.filter((task) => task.priority === priority).length
   );
 
-  const completedCount = tasks.filter((t) => t.completed).length;
-  const pendingCount = tasks.filter((t) => !t.completed).length;
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const pendingCount = tasks.filter((task) => !task.completed).length;
 
-  const createdDates = [...new Set(tasks.map((t) => t.createdAt))].sort();
+  const createdDates = [...new Set(
+    tasks
+      .map((task) => {
+        const date = new Date(task.created_at);
+        return !isNaN(date) ? date.toISOString().split('T')[0] : null;
+      })
+      .filter(Boolean)
+  )].sort();
+
   const tasksPerDay = createdDates.map(
-    (date) => tasks.filter((t) => t.createdAt === date).length
+    (date) =>
+      tasks.filter((task) => {
+        const taskDate = new Date(task.created_at).toISOString().split('T')[0];
+        return taskDate === date;
+      }).length
   );
 
   return (
@@ -69,13 +97,13 @@ const Charts = ({ tasks }) => {
                     y: {
                       ticks: {
                         color: '#ccc',
-                        precision: 0 // 🔥 fără zecimale
-                      }
+                        precision: 0,
+                      },
                     },
                     x: {
-                      ticks: { color: '#ccc' }
-                    }
-                  }
+                      ticks: { color: '#ccc' },
+                    },
+                  },
                 }}
               />
             </div>
@@ -103,10 +131,10 @@ const Charts = ({ tasks }) => {
                     tooltip: {
                       callbacks: {
                         label: (context) =>
-                          `${context.label}: ${Math.round(context.raw)}`
-                      }
-                    }
-                  }
+                          `${context.label}: ${Math.round(context.raw)}`,
+                      },
+                    },
+                  },
                 }}
               />
             </div>
@@ -142,9 +170,9 @@ const Charts = ({ tasks }) => {
                     y: {
                       ticks: {
                         color: '#ccc',
-                        precision: 0 // 🔥 fără zecimale
-                      }
-                    }
+                        precision: 0,
+                      },
+                    },
                   },
                 }}
               />

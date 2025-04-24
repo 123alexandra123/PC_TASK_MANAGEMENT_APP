@@ -147,8 +147,8 @@ const MainPage = () => {
                     <p className="text-white mb-1 ps-4 small">{task.description}</p>
                   )}
                   <div className="d-flex justify-content-between text-muted small">
-                    <span>📅 Created: {task.createdAt}</span>
-                    <span>⏳ Deadline: {task.deadline}</span>
+                    <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
+                    <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
                     <span>⚡ Priority: {task.priority}</span>
                   </div>
                 </div>
