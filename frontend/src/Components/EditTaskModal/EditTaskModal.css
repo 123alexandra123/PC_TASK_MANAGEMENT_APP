@@ -1,0 +1,62 @@
+.edit-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  .edit-modal-content {
+    background-color: #1f1f1f;
+    color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+  }
+  
+  .edit-task-form input,
+  .edit-task-form textarea,
+  .edit-task-form select {
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background-color: #2c2c2c;
+    color: white;
+  }
+  
+  .edit-task-form textarea {
+    height: 80px;
+    resize: vertical;
+  }
+  
+  .edit-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .btn-success {
+    background-color: #9731db;
+    color: white;
+    border: none;
+    transition: 0.3s ease;
+  }
+  
+  .btn-success:hover {
+    background-color: #e376f4;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background-color: #ffffff;
+    color: rgb(0, 0, 0);
+  }
