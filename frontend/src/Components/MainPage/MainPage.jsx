@@ -12,10 +12,12 @@ import {
 import './MainPage.css';
 
 const MainPage = () => {
+  // Asigurăm inițializarea corectă a stării `tasks` ca array
   const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState('deadline');
   const [filterPriority, setFilterPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -24,12 +26,14 @@ const MainPage = () => {
 
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [currentPage]);
 
+  // Verificăm răspunsul de la backend înainte de a seta starea
   const loadTasks = async () => {
     try {
-      const data = await getTasks();
-      setTasks(data);
+      const data = await getTasks(currentPage, tasksPerPage);
+      setTasks(data.tasks || []); // Asigurăm că `tasks` este întotdeauna un array
+      setTotalPages(data.totalPages || 1); // Setăm un fallback pentru `totalPages`
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }
@@ -88,11 +92,6 @@ const MainPage = () => {
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
 
-  const indexOfLastTask = currentPage * tasksPerPage;
-  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const paginatedTasks = filteredTasks.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
-
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -126,10 +125,10 @@ const MainPage = () => {
         </div>
 
         <div className="task-list">
-          {paginatedTasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <p className="text-white">No tasks found for current filter.</p>
           ) : (
-            paginatedTasks.map(task => (
+            filteredTasks.map(task => (
               <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
                 <div className="w-100">
                   <div className="d-flex align-items-center gap-2 mb-2">

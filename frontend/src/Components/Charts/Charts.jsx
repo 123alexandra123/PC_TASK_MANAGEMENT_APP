@@ -31,9 +31,9 @@ const Charts = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/tasks');
+        const res = await fetch('http://localhost:5000/api/tasks?page=1&limit=100'); // Obținem toate task-urile
         const data = await res.json();
-        setTasks(data);
+        setTasks(data.tasks || []); // Asigurăm că `tasks` este întotdeauna un array
       } catch (err) {
         console.error('Failed to load tasks:', err);
       }

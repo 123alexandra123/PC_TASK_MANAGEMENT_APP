@@ -4,7 +4,9 @@ const {
   getAllTasks,
   updateTask,
   deleteTask,
-  toggleTaskCompleted
+  toggleTaskCompleted,
+  getPaginatedTasks,
+  getTotalTaskCount
 } = require("../models/Task");
 
 const router = express.Router();
@@ -19,11 +21,20 @@ router.post("/", async (req, res) => {
   }
 });
 
-// obtine toate task-urile
+// obtine toate task-urile cu paginare
 router.get("/", async (req, res) => {
   try {
-    const tasks = await getAllTasks();
-    res.json(tasks);
+    const { page = 1, limit = 5 } = req.query; // preluăm pagina și limita din query params
+    const offset = (page - 1) * limit; // calculăm offset-ul
+
+    const tasks = await getPaginatedTasks(offset, parseInt(limit)); // obținem task-urile paginate
+    const totalTasks = await getTotalTaskCount(); // obținem numărul total de task-uri
+
+    res.json({
+      tasks,
+      totalPages: Math.ceil(totalTasks / limit),
+      currentPage: parseInt(page),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

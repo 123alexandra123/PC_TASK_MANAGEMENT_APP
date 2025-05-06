@@ -27,7 +27,9 @@ const getAllTasks = () => {
 
 // update task
 const updateTask = (id, updatedTask) => {
-    console.log("Updating task:", updatedTask); // Debugging
+    console.log("Updating task with ID:", id); // Log ID-ul task-ului
+    console.log("Task data:", updatedTask); // Log datele task-ului
+
     const { title, description, deadline, priority, completed } = updatedTask;
     return new Promise((resolve, reject) => {
       const query = `
@@ -36,7 +38,11 @@ const updateTask = (id, updatedTask) => {
         WHERE id = ?
       `;
       db.query(query, [title, description, deadline, priority, completed, id], (err, result) => {
-        if (err) return reject(err);
+        if (err) {
+          console.error("Error executing query:", err); // Log eroarea
+          return reject(err);
+        }
+        console.log("Query result:", result); // Log rezultatul query-ului
         resolve(result);
       });
     });
@@ -68,10 +74,34 @@ const toggleTaskCompleted = (id) => {
   });
 };
 
+// funcție pentru a obține task-urile paginate
+const getPaginatedTasks = (offset, limit) => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT * FROM tasks LIMIT ? OFFSET ?";
+    db.query(query, [limit, offset], (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+};
+
+// funcție pentru a obține numărul total de task-uri
+const getTotalTaskCount = () => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT COUNT(*) AS count FROM tasks";
+    db.query(query, (err, results) => {
+      if (err) return reject(err);
+      resolve(results[0].count);
+    });
+  });
+};
+
 module.exports = {
   createTask,
   getAllTasks,
   updateTask,
   deleteTask,
-  toggleTaskCompleted
+  toggleTaskCompleted,
+  getPaginatedTasks,
+  getTotalTaskCount,
 };

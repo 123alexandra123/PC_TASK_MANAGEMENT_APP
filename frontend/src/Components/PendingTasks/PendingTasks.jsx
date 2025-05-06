@@ -5,11 +5,12 @@ import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskS
 import './PendingTasks.css';
 
 const PendingTasks = ({ deleteTask, editTask }) => {
-  const [tasksState, setTasksState] = useState([]); // Stocăm task-urile nefinalizate
+  const [tasksState, setTasksState] = useState([]); // Asigurăm inițializarea corectă a stării `tasksState` ca array
 
   // Paginare
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
+  const [totalPages, setTotalPages] = useState(0);
 
   // Modal și task selectat pentru editare
   const [selectedTask, setSelectedTask] = useState(null);
@@ -18,15 +19,17 @@ const PendingTasks = ({ deleteTask, editTask }) => {
   // Încarcă task-urile pendente de la backend
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [currentPage]);
 
+  // Modificăm funcția `loadTasks` pentru a filtra doar task-urile necompletate
   const loadTasks = async () => {
     try {
-      const data = await getTasks(); // Obținem task-urile de la backend
-      const pendingTasks = data.filter(task => !task.completed); // Filtrăm doar task-urile nefinalizate
-      setTasksState(pendingTasks);
+      const data = await getTasks(currentPage, tasksPerPage); // Obținem toate task-urile de la backend
+      const pendingTasks = data.tasks.filter(task => !task.completed); // Filtrăm doar task-urile necompletate
+      setTasksState(pendingTasks || []); // Setăm task-urile necompletate
+      setTotalPages(data.totalPages || 1); // Setăm numărul total de pagini
     } catch (err) {
-      console.error("Failed to load tasks:", err); // Dacă se întâmplă o eroare
+      console.error("Failed to load tasks:", err);
     }
   };
 
@@ -58,11 +61,6 @@ const PendingTasks = ({ deleteTask, editTask }) => {
     }
   };
 
-  const indexOfLastTask = currentPage * tasksPerPage;
-  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const paginatedTasks = tasksState.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(tasksState.length / tasksPerPage);
-
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -75,10 +73,10 @@ const PendingTasks = ({ deleteTask, editTask }) => {
       <div className="main-content container task-list">
         <h2 className="fw-bold text-white mb-4">🕒 Pending Tasks</h2>
 
-        {paginatedTasks.length === 0 ? (
+        {tasksState.length === 0 ? (
           <p className="text-white">No pending tasks. All done! 🎉</p>
         ) : (
-          paginatedTasks.map(task => (
+          tasksState.map(task => (
             <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
               <div className="w-100">
                 <div className="d-flex align-items-center gap-2 mb-2">
