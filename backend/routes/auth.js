@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { createUser, findUserByEmail } = require("../models/User");
+const { getAllTeams } = require("../models/Team");
 
 const router = express.Router();
 
@@ -10,13 +11,23 @@ router.get("/", (req, res) => {
   res.send("Auth API funcționează!");
 });
 
+// Obține toate echipele
+router.get("/teams", async (req, res) => {
+  try {
+    const teams = await getAllTeams();
+    res.json(teams);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // inregistrare utilizator
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, role, password } = req.body;
+    const { name, email, role, password, group } = req.body;
 
-    // validare campuri
-    if (!name || !email || !password) {
+    // validare câmpuri
+    if (!name || !email || !password || !group) {
       return res.status(400).json({ message: "Toate câmpurile sunt necesare!" });
     }
 
@@ -25,7 +36,7 @@ router.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     // creare utilizator
-    await createUser(name, email, role || "user", passwordHash);
+    await createUser(name, email, role || "user", passwordHash, group);
 
     res.status(201).json({ message: "Utilizator înregistrat!" });
   } catch (err) {
@@ -60,7 +71,7 @@ router.post("/login", async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, group: user.group },
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

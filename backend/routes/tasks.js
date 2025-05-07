@@ -4,7 +4,9 @@ const {
   getAllTasks,
   updateTask,
   deleteTask,
-  toggleTaskCompleted
+  toggleTaskCompleted,
+  getPaginatedTasks,
+  getTotalTaskCount
 } = require("../models/Task");
 
 const router = express.Router();
@@ -12,18 +14,27 @@ const router = express.Router();
 // add task
 router.post("/", async (req, res) => {
   try {
-    const result = await createTask(req.body);
+    const result = await createTask({ ...req.body, assigned_to: req.body.assigned_to });
     res.status(201).json({ message: "Task added", taskId: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// obtine toate task-urile
+// obtine toate task-urile cu paginare și filtrare
 router.get("/", async (req, res) => {
   try {
-    const tasks = await getAllTasks();
-    res.json(tasks);
+    const { page = 1, limit = 5, filter } = req.query; // Accept `filter` query param
+    const offset = (page - 1) * limit;
+
+    const tasks = await getPaginatedTasks(offset, parseInt(limit), filter); // Pass `filter` to the model function
+    const totalTasks = await getTotalTaskCount(filter); // Pass `filter` to count only relevant tasks
+
+    res.json({
+      tasks,
+      totalPages: Math.ceil(totalTasks / limit),
+      currentPage: parseInt(page),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -4,24 +4,27 @@ import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskS
 import './CompletedTasks.css';
 
 const CompletedTasks = () => {
+  // Asigurăm inițializarea corectă a stării `tasksState` ca array
   const [tasksState, setTasksState] = useState([]); // Stocăm task-urile completate
 
   // Paginare
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const tasksPerPage = 5;
 
   // Încarcă task-urile completate de la backend
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [currentPage]);
 
+  // Pass the `filter` parameter as 'completed' when fetching tasks
   const loadTasks = async () => {
     try {
-      const data = await getTasks(); // Obținem task-urile de la backend
-      const completedTasks = data.filter(task => task.completed); // Filtrăm doar task-urile completate
-      setTasksState(completedTasks);
+      const data = await getTasks(currentPage, tasksPerPage, 'completed'); // Fetch only completed tasks
+      setTasksState(data.tasks || []);
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
-      console.error("Failed to load tasks:", err); // Dacă se întâmplă o eroare
+      console.error("Failed to load tasks:", err);
     }
   };
 
@@ -43,11 +46,6 @@ const CompletedTasks = () => {
     }
   };
 
-  const indexOfLastTask = currentPage * tasksPerPage;
-  const indexOfFirstTask = indexOfLastTask - tasksPerPage;
-  const paginatedTasks = tasksState.slice(indexOfFirstTask, indexOfLastTask);
-  const totalPages = Math.ceil(tasksState.length / tasksPerPage);
-
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -59,10 +57,10 @@ const CompletedTasks = () => {
       <Navbar />
       <div className="main-content container task-list">
         <h2 className="fw-bold text-white mb-4">✅ Completed Tasks</h2>
-        {paginatedTasks.length === 0 ? (
+        {tasksState.length === 0 ? (
           <p className="text-white">No completed tasks yet.</p>
         ) : (
-          paginatedTasks.map(task => (
+          tasksState.map(task => (
             <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
               <div className="w-100">
                 <div className="d-flex align-items-center gap-2 mb-2">

@@ -20,6 +20,7 @@ function App() {
     try {
       const res = await fetch('http://localhost:5000/api/tasks');
       const data = await res.json();
+      console.log("Fetched tasks:", data);
       setTasks(data);
     } catch (err) {
       console.error("Error fetching tasks:", err);

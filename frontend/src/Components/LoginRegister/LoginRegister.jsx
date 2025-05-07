@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LoginRegister.css';
 import { FaUser, FaLock, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,31 @@ const LoginRegister = () => {
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [teams, setTeams] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState('');
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/teams');
+        if (!response.ok) {
+          throw new Error('Failed to fetch teams');
+        }
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setTeams(data);
+        } else {
+          console.error('Unexpected response format:', data);
+          setTeams([]);
+        }
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        setTeams([]);
+      }
+    };
+
+    fetchTeams();
+  }, []);
 
   const registerLink = () => setAction(' active');
   const loginLink = () => setAction('');
@@ -31,7 +56,8 @@ const LoginRegister = () => {
               localStorage.setItem('token', data.token);
               localStorage.setItem('user', JSON.stringify({
               username: data.user.name,
-              email: data.user.email
+              email: data.user.email,
+              group: data.user.group
         }));
         navigate('/main');
       } else {
@@ -53,7 +79,8 @@ const LoginRegister = () => {
           name: registerName,
           email: registerEmail,
           password: registerPassword,
-          role: 'user'
+          role: 'user',
+          group: selectedTeam
         })
       });
 
@@ -141,6 +168,18 @@ const LoginRegister = () => {
                 onChange={(e) => setRegisterPassword(e.target.value)}
               />
               <FaLock className='icon' />
+            </div>
+            <div className="input-box">
+              <select
+                required
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+              >
+                <option value="">Select Team</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.name}>{team.name}</option>
+                ))}
+              </select>
             </div>
             <button type="submit">Register</button>
             <div className="register-link">

@@ -2,10 +2,10 @@ const db = require("../db");
 
 // functie pentru a crea un utilizator nou in baza de date
 
-const createUser = (name, email, role, passwordHash) => {
+const createUser = (name, email, role, passwordHash, group) => {
   return new Promise((resolve, reject) => {
-    const query = "INSERT INTO users (name, email, role, password_hash) VALUES (?, ?, ?, ?)";
-    db.query(query, [name, email, role, passwordHash], (err, results) => {
+    const query = "INSERT INTO users (name, email, role, password_hash, `group`) VALUES (?, ?, ?, ?, ?)";
+    db.query(query, [name, email, role, passwordHash, group], (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });

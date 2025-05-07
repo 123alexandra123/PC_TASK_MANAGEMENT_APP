@@ -1,8 +1,9 @@
 // src/services/taskService.js
 const API_URL = "http://localhost:5000/api/tasks";
 
-export const getTasks = async () => {
-  const res = await fetch(API_URL);
+export const getTasks = async (page = 1, limit = 5, filter = null) => {
+  const filterQuery = filter ? `&filter=${filter}` : '';
+  const res = await fetch(`${API_URL}?page=${page}&limit=${limit}${filterQuery}`);
   return await res.json();
 };
 
@@ -32,8 +33,8 @@ export const deleteTaskById = async (id) => {
 };
 
 export const toggleTaskStatus = async (id) => {
-    const res = await fetch(`${API_URL}/${id}/toggle`, {
-      method: 'PATCH',
-    });
-    return await res.json();
-  };
+  const res = await fetch(`${API_URL}/${id}/toggle`, {
+    method: 'PATCH',
+  });
+  return await res.json();
+};
