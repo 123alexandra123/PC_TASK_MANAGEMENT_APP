@@ -41,7 +41,7 @@ const MainPage = () => {
 
   const handleAddTask = async (newTask) => {
     try {
-      const created = await createTask(newTask);
+      const created = await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
       await loadTasks(); // reîncarcă lista
       setShowAddModal(false);
     } catch (err) {

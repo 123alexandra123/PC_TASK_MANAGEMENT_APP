@@ -96,6 +96,7 @@ const PendingTasks = ({ deleteTask, editTask }) => {
                   <span>📅 Created: {task.createdAt}</span>
                   <span>⏳ Deadline: {task.deadline}</span>
                   <span>⚡ Priority: {task.priority}</span>
+                  <span>👥 Assigned to: {task.team_name || 'No team assigned'}</span>
                 </div>
               </div>
 

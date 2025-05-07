@@ -14,7 +14,7 @@ const router = express.Router();
 // add task
 router.post("/", async (req, res) => {
   try {
-    const result = await createTask(req.body);
+    const result = await createTask({ ...req.body, assigned_to: req.body.assigned_to });
     res.status(201).json({ message: "Task added", taskId: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
     const offset = (page - 1) * limit;
 
     const tasks = await getPaginatedTasks(offset, parseInt(limit), filter); // Pass `filter` to the model function
-    const totalTasks = await getTotalTaskCount(); // Get total task count
+    const totalTasks = await getTotalTaskCount(filter); // Pass `filter` to count only relevant tasks
 
     res.json({
       tasks,

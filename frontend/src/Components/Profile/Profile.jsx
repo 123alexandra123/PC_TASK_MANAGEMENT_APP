@@ -6,7 +6,7 @@ import defaultAvatar from '../Assets/default-avatar.png';
 const Profile = () => {
   const [profileImage, setProfileImage] = useState(null);
   const fileInputRef = useRef(null);
-  const [user, setUser] = useState({ username: '', email: '' });
+  const [user, setUser] = useState({ username: '', email: '', group: '' });
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -53,6 +53,7 @@ const Profile = () => {
               style={{ display: 'none' }}
             />
             <p><strong>Username:</strong> {user.username}</p>
+            <p><strong>Group:</strong> {user.group || 'No group assigned'}</p>
             <p><strong>Email:</strong> {user.email}</p>
             <button className="btn btn-danger logout-btn" onClick={handleLogout}>
               Logout

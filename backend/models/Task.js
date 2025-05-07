@@ -18,7 +18,12 @@ const createTask = (task) => {
 // obtine toate task-urile
 const getAllTasks = () => {
   return new Promise((resolve, reject) => {
-    db.query("SELECT * FROM tasks", (err, results) => {
+    const query = `
+      SELECT tasks.*, teams.name AS team_name
+      FROM tasks
+      LEFT JOIN teams ON tasks.assigned_to = teams.id
+    `;
+    db.query(query, (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });
@@ -97,10 +102,18 @@ const getPaginatedTasks = (offset, limit, filter) => {
 };
 
 // funcție pentru a obține numărul total de task-uri
-const getTotalTaskCount = () => {
+const getTotalTaskCount = (filter) => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT COUNT(*) AS count FROM tasks";
-    db.query(query, (err, results) => {
+    let query = "SELECT COUNT(*) AS count FROM tasks";
+    const params = [];
+
+    if (filter === 'completed') {
+      query += " WHERE completed = 1";
+    } else if (filter === 'pending') {
+      query += " WHERE completed = 0";
+    }
+
+    db.query(query, params, (err, results) => {
       if (err) return reject(err);
       resolve(results[0].count);
     });
