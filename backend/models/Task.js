@@ -15,21 +15,6 @@ const createTask = (task) => {
   });
 };
 
-// obtine toate task-urile
-const getAllTasks = () => {
-  return new Promise((resolve, reject) => {
-    const query = `
-      SELECT tasks.*, teams.name AS team_name
-      FROM tasks
-      LEFT JOIN teams ON tasks.assigned_to = teams.id
-    `;
-    db.query(query, (err, results) => {
-      if (err) return reject(err);
-      resolve(results);
-    });
-  });
-};
-
 // update task
 const updateTask = (id, updatedTask) => {
     console.log("Updating task with ID:", id); // Log ID-ul task-ului
@@ -122,7 +107,6 @@ const getTotalTaskCount = (filter) => {
 
 module.exports = {
   createTask,
-  getAllTasks,
   updateTask,
   deleteTask,
   toggleTaskCompleted,
