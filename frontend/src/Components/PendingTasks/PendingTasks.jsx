@@ -21,13 +21,12 @@ const PendingTasks = ({ deleteTask, editTask }) => {
     loadTasks();
   }, [currentPage]);
 
-  // Modificăm funcția `loadTasks` pentru a filtra doar task-urile necompletate
+  // Pass the `filter` parameter as 'pending' when fetching tasks
   const loadTasks = async () => {
     try {
-      const data = await getTasks(currentPage, tasksPerPage); // Obținem toate task-urile de la backend
-      const pendingTasks = data.tasks.filter(task => !task.completed); // Filtrăm doar task-urile necompletate
-      setTasksState(pendingTasks || []); // Setăm task-urile necompletate
-      setTotalPages(data.totalPages || 1); // Setăm numărul total de pagini
+      const data = await getTasks(currentPage, tasksPerPage, 'pending'); // Fetch only pending tasks
+      setTasksState(data.tasks || []);
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }

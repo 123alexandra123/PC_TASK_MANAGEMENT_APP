@@ -75,10 +75,21 @@ const toggleTaskCompleted = (id) => {
 };
 
 // funcție pentru a obține task-urile paginate
-const getPaginatedTasks = (offset, limit) => {
+const getPaginatedTasks = (offset, limit, filter) => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT * FROM tasks LIMIT ? OFFSET ?";
-    db.query(query, [limit, offset], (err, results) => {
+    let query = "SELECT * FROM tasks";
+    const params = [];
+
+    if (filter === 'completed') {
+      query += " WHERE completed = 1";
+    } else if (filter === 'pending') {
+      query += " WHERE completed = 0";
+    }
+
+    query += " LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+    db.query(query, params, (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });

@@ -1,8 +1,9 @@
 // src/services/taskService.js
 const API_URL = "http://localhost:5000/api/tasks";
 
-export const getTasks = async (page = 1, limit = 5) => {
-  const res = await fetch(`${API_URL}?page=${page}&limit=${limit}`);
+export const getTasks = async (page = 1, limit = 5, filter = null) => {
+  const filterQuery = filter ? `&filter=${filter}` : '';
+  const res = await fetch(`${API_URL}?page=${page}&limit=${limit}${filterQuery}`);
   return await res.json();
 };
 

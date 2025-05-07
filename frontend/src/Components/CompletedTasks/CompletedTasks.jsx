@@ -17,13 +17,12 @@ const CompletedTasks = () => {
     loadTasks();
   }, [currentPage]);
 
-  // Revenim la implementarea anterioară
+  // Pass the `filter` parameter as 'completed' when fetching tasks
   const loadTasks = async () => {
     try {
-      const data = await getTasks(currentPage, tasksPerPage); // Obținem toate task-urile de la backend
-      const completedTasks = data.tasks.filter(task => task.completed); // Filtrăm doar task-urile completate
-      setTasksState(completedTasks || []); // Setăm task-urile completate
-      setTotalPages(data.totalPages || 1); // Setăm numărul total de pagini
+      const data = await getTasks(currentPage, tasksPerPage, 'completed'); // Fetch only completed tasks
+      setTasksState(data.tasks || []);
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }

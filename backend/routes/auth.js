@@ -15,7 +15,7 @@ router.post("/register", async (req, res) => {
   try {
     const { name, email, role, password } = req.body;
 
-    // validare campuri
+    // validare câmpuri
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Toate câmpurile sunt necesare!" });
     }

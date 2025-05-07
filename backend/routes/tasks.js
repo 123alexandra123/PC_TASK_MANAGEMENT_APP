@@ -21,14 +21,14 @@ router.post("/", async (req, res) => {
   }
 });
 
-// obtine toate task-urile cu paginare
+// obtine toate task-urile cu paginare și filtrare
 router.get("/", async (req, res) => {
   try {
-    const { page = 1, limit = 5 } = req.query; // preluăm pagina și limita din query params
-    const offset = (page - 1) * limit; // calculăm offset-ul
+    const { page = 1, limit = 5, filter } = req.query; // Accept `filter` query param
+    const offset = (page - 1) * limit;
 
-    const tasks = await getPaginatedTasks(offset, parseInt(limit)); // obținem task-urile paginate
-    const totalTasks = await getTotalTaskCount(); // obținem numărul total de task-uri
+    const tasks = await getPaginatedTasks(offset, parseInt(limit), filter); // Pass `filter` to the model function
+    const totalTasks = await getTotalTaskCount(); // Get total task count
 
     res.json({
       tasks,
