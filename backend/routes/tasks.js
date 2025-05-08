@@ -14,63 +14,93 @@ const router = express.Router();
 // Helper function for SLA calculation
 const calculateSLADeadline = (priority) => {
   const now = new Date();
+  let hours;
+
   switch (priority) {
     case 'High':
-      return new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24
+      hours = 24;
+      break;
     case 'Medium':
-      return new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48
+      hours = 48;
+      break;
     case 'Low':
-      return new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72
+      hours = 72;
+      break;
     default:
-      return new Date(now.getTime() + 48 * 60 * 60 * 1000); // default 48
+      hours = 48;
   }
+
+  const deadline = new Date(now.getTime() + hours * 60 * 60 * 1000);
+  return deadline.toISOString();
 };
 
 // Helper function for checking SLA status
 const checkSLAStatus = (task) => {
   const now = new Date();
   const slaDeadline = new Date(task.sla_deadline);
-  
+
+  // Add debug logging
+  console.log('SLA Check for task:', {
+    id: task.id,
+    completed: task.completed,
+    deadline: slaDeadline,
+    now: now,
+    diff: slaDeadline - now
+  });
+
   if (task.completed) {
-    return 'Completed';
+    return {
+      status: 'Completed',
+      timeRemaining: 0
+    };
   }
-  
-  return 'Breached';  // Everything not completed is considered breached
+
+  const timeRemaining = Math.floor((slaDeadline - now) / (1000 * 60 * 60));
+
+  if (timeRemaining > 0) {
+    return {
+      status: 'Waiting',
+      timeRemaining: timeRemaining
+    };
+  }
+
+  return {
+    status: 'Breached',
+    timeRemaining: 0
+  };
 };
+
 // Get all tasks with pagination and filtering
 router.get("/", async (req, res) => {
   try {
-    const { page = 1, limit = 5, filter } = req.query;
+    const { page = 1, limit = 5 } = req.query;
     const offset = (page - 1) * limit;
 
-    const tasks = await getPaginatedTasks(offset, parseInt(limit), filter);
-    
-    // Add SLA information to each task
-    const tasksWithSLA = tasks.map(task => ({
-      ...task,
-      sla: {
-        deadline: task.sla_deadline,
-        status: checkSLAStatus(task),
-        timeRemaining: Math.max(0, Math.floor(
-          (new Date(task.sla_deadline) - new Date()) / (1000 * 60 * 60)
-        ))
-      }
-    }));
+    const tasks = await getPaginatedTasks(offset, parseInt(limit));
+    console.log('Retrieved tasks:', tasks); // Add this debug log
 
-    const totalTasks = await getTotalTaskCount(filter);
+    const tasksWithSLA = tasks.map(task => {
+      const slaInfo = checkSLAStatus(task);
+      return {
+        ...task,
+        sla: {
+          status: slaInfo.status,
+          deadline: task.sla_deadline,
+          timeRemaining: slaInfo.timeRemaining
+        }
+      };
+    });
+
+    const totalTasks = await getTotalTaskCount(); // Make sure this is defined
+    console.log('Total tasks:', totalTasks); // Add this debug log
 
     res.json({
       tasks: tasksWithSLA,
       totalPages: Math.ceil(totalTasks / limit),
-      currentPage: parseInt(page),
-      slaMetrics: {
-        onTrack: tasksWithSLA.filter(t => t.sla.status === 'On Track').length,
-        atRisk: tasksWithSLA.filter(t => t.sla.status === 'At Risk').length,
-        breached: tasksWithSLA.filter(t => t.sla.status === 'Breached').length,
-        completed: tasksWithSLA.filter(t => t.sla.status === 'Completed').length
-      }
+      currentPage: parseInt(page)
     });
   } catch (err) {
+    console.error('Error fetching tasks:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -85,16 +115,23 @@ router.post("/", async (req, res) => {
     const slaDeadline = calculateSLADeadline(req.body.priority);
     const taskData = {
       ...req.body,
-      assigned_to: req.body.assigned_to,
       sla_deadline: slaDeadline
     };
 
     const result = await createTask(taskData);
-    res.status(201).json({ 
-      message: "Task added", 
-      taskId: result.insertId,
-      slaDeadline: slaDeadline
-    });
+    
+    // Return the newly created task with SLA info
+    const newTask = {
+      id: result.insertId,
+      ...taskData,
+      sla: {
+        status: 'Waiting',
+        deadline: slaDeadline,
+        timeRemaining: Math.floor((new Date(slaDeadline) - new Date()) / (1000 * 60 * 60))
+      }
+    };
+
+    res.status(201).json(newTask);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -109,9 +146,18 @@ router.put("/:id", async (req, res) => {
     };
 
     await updateTask(req.params.id, updatedTask);
-    res.json({ 
-      message: "Task updated",
-      slaDeadline: updatedTask.sla_deadline
+    
+    // Get the updated task with new SLA info
+    const task = { id: req.params.id, ...updatedTask };
+    const slaInfo = checkSLAStatus(task);
+    
+    res.json({
+      ...task,
+      sla: {
+        status: slaInfo.status,
+        deadline: task.sla_deadline,
+        timeRemaining: slaInfo.timeRemaining
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -132,47 +178,18 @@ router.delete("/:id", async (req, res) => {
 router.patch("/:id/toggle", async (req, res) => {
   try {
     const task = await toggleTaskCompleted(req.params.id);
+    const slaInfo = checkSLAStatus(task);
+    
     const updatedTask = {
       ...task,
       sla: {
-        status: checkSLAStatus(task),
+        status: slaInfo.status,
         deadline: task.sla_deadline,
-        timeRemaining: Math.max(0, Math.floor(
-          (new Date(task.sla_deadline) - new Date()) / (1000 * 60 * 60)
-        ))
+        timeRemaining: slaInfo.timeRemaining
       }
     };
+    
     res.json(updatedTask);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get SLA statistics
-router.get("/sla-stats", async (req, res) => {
-  try {
-    const tasks = await getAllTasks();
-    const tasksWithSLA = tasks.map(task => ({
-      ...task,
-      slaStatus: checkSLAStatus(task)
-    }));
-
-    const stats = {
-      total: tasks.length,
-      byStatus: {
-        onTrack: tasksWithSLA.filter(t => t.slaStatus === 'On Track').length,
-        atRisk: tasksWithSLA.filter(t => t.slaStatus === 'At Risk').length,
-        breached: tasksWithSLA.filter(t => t.slaStatus === 'Breached').length,
-        completed: tasksWithSLA.filter(t => t.slaStatus === 'Completed').length
-      },
-      byPriority: {
-        High: tasksWithSLA.filter(t => t.priority === 'High').length,
-        Medium: tasksWithSLA.filter(t => t.priority === 'Medium').length,
-        Low: tasksWithSLA.filter(t => t.priority === 'Low').length
-      }
-    };
-
-    res.json(stats);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

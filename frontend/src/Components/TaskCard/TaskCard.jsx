@@ -2,12 +2,12 @@ import React from 'react';
 import './TaskCard.css';
 
 const TaskCard = ({ task }) => {
-  const slaColors = {
-    'On Track': '#4caf50',
-    'At Risk': '#ff9800',
-    'Breached': '#f44336',
-    'Completed': '#8bc34a'
-  };
+    console.log('Task SLA data:', {
+      id: task.id,
+      deadline: task.sla_deadline,
+      status: task.sla?.status,
+      timeRemaining: task.sla?.timeRemaining
+    });
 
   return (
     <div className="task-card">

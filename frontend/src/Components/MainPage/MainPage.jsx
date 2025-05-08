@@ -11,6 +11,14 @@ import {
 } from '../../services/taskService';
 import './MainPage.css';
 
+const calculateTimeRemaining = (slaDeadline) => {
+  if (!slaDeadline) return 0;
+  const now = new Date();
+  const deadline = new Date(slaDeadline);
+  const diffHours = Math.floor((deadline - now) / (1000 * 60 * 60));
+  return Math.max(0, diffHours);
+};
+
 const MainPage = () => {
   const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState('deadline');
@@ -25,22 +33,30 @@ const MainPage = () => {
   const tasksPerPage = 5;
 
   useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const data = await getTasks(currentPage, tasksPerPage);
+        console.log('Received tasks:', data); // Add this debug log
+        if (data && data.tasks) {
+          setTasks(data.tasks);
+          setTotalPages(data.totalPages || 1);
+        } else {
+          console.error('No tasks data received');
+          setTasks([]);
+          setTotalPages(1);
+        }
+      } catch (err) {
+        console.error("Failed to load tasks:", err);
+        setTasks([]);
+        setTotalPages(1);
+      }
+    };
+
     loadTasks();
   }, [currentPage, refresh]);
 
-  const loadTasks = async () => {
-    try {
-      const data = await getTasks(currentPage, tasksPerPage);
-      setTasks(data.tasks || []);
-      setTotalPages(data.totalPages || 1);
-    } catch (err) {
-      console.error("Failed to load tasks:", err);
-    }
-  };
-
   const handleTaskAdded = () => {
     setRefresh(prev => prev + 1);
-    loadTasks();
   };
 
   const handleAddTask = async (newTask) => {
@@ -78,6 +94,21 @@ const MainPage = () => {
       handleTaskAdded();
     } catch (err) {
       console.error("Failed to toggle complete:", err);
+    }
+  };
+
+  const getSLAStatusClass = (task) => {
+    if (!task.sla?.status) return '';
+    const status = task.sla.status.toLowerCase();
+    switch (status) {
+      case 'waiting':
+        return 'sla-waiting';
+      case 'breached':
+        return 'sla-breached';
+      case 'completed':
+        return 'sla-completed';
+      default:
+        return '';
     }
   };
 
@@ -147,8 +178,10 @@ const MainPage = () => {
                         {task.title}
                       </h5>
                       {task.sla && (
-                        <span className={`sla-badge sla-${task.sla.status.toLowerCase()}`}>
-                          {task.sla.status}
+                        <span className={`sla-badge ${task.completed ? 'sla-completed' : 
+                          new Date() > new Date(task.sla_deadline) ? 'sla-breached' : 'sla-waiting'}`}>
+                          {task.completed ? 'Completed' : 
+                           new Date() > new Date(task.sla_deadline) ? 'Breached' : 'Waiting'}
                         </span>
                       )}
                     </div>
@@ -159,9 +192,7 @@ const MainPage = () => {
                       <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
                       <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
                       <span>⚡ Priority: {task.priority}</span>
-                      {task.sla && (
-                        <span>⏰ SLA: {task.sla.timeRemaining}h remaining</span>
-                      )}
+                      <span>⏰ SLA: {task.sla?.timeRemaining || 0}h remaining</span>
                     </div>
                   </div>
                   <div className="d-flex gap-2">
@@ -217,10 +248,10 @@ const MainPage = () => {
       </div>
 
       <AddTaskModal
-  show={showAddModal}
-  onClose={() => setShowAddModal(false)}
-  onTaskAdded={handleTaskAdded}  
-/>
+        show={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onTaskAdded={handleTaskAdded}
+      />
 
       <EditTaskModal
         show={showEditModal}
