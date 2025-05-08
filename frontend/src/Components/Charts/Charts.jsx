@@ -27,31 +27,65 @@ ChartJS.register(
 
 const Charts = () => {
   const [tasks, setTasks] = useState([]);
+  const [selectedPriority, setSelectedPriority] = useState('All');
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/tasks?page=1&limit=100'); // Obținem toate task-urile
+        const res = await fetch('http://localhost:5000/api/tasks?page=1&limit=100');
         const data = await res.json();
-        setTasks(data.tasks || []); // Asigurăm că `tasks` este întotdeauna un array
+        const tasksWithSLA = data.tasks.map(task => ({
+          ...task,
+          sla: {
+            status: calculateSLAStatus(task),
+            deadline: task.sla_deadline,
+            timeRemaining: calculateTimeRemaining(task.sla_deadline)
+          }
+        }));
+        setTasks(tasksWithSLA);
       } catch (err) {
         console.error('Failed to load tasks:', err);
       }
     };
 
     fetchTasks();
-  }, []);
+  }, [refresh]);
+
+  // Helper function to calculate SLA status
+  const calculateSLAStatus = (task) => {
+    if (task.completed) return 'Completed';
+    
+    const now = new Date();
+    const deadline = new Date(task.sla_deadline);
+    const hoursLeft = (deadline - now) / (1000 * 60 * 60);
+
+    if (hoursLeft < 0) return 'Breached';
+    if (hoursLeft <= 4) return 'At Risk';
+    return 'On Track';
+  };
+
+  // Helper function to calculate remaining time
+  const calculateTimeRemaining = (deadline) => {
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    return Math.max(0, Math.floor((deadlineDate - now) / (1000 * 60 * 60)));
+  };
+
+  const filteredTasks = selectedPriority === 'All' 
+    ? tasks 
+    : tasks.filter(task => task.priority === selectedPriority);
 
   const priorityLabels = ['High', 'Medium', 'Low'];
   const priorityCounts = priorityLabels.map(
-    (priority) => tasks.filter((task) => task.priority === priority).length
+    (priority) => filteredTasks.filter((task) => task.priority === priority).length
   );
 
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const pendingCount = tasks.filter((task) => !task.completed).length;
+  const completedCount = filteredTasks.filter((task) => task.completed).length;
+  const pendingCount = filteredTasks.filter((task) => !task.completed).length;
 
   const createdDates = [...new Set(
-    tasks
+    filteredTasks
       .map((task) => {
         const date = new Date(task.created_at);
         return !isNaN(date) ? date.toISOString().split('T')[0] : null;
@@ -61,17 +95,42 @@ const Charts = () => {
 
   const tasksPerDay = createdDates.map(
     (date) =>
-      tasks.filter((task) => {
+      filteredTasks.filter((task) => {
         const taskDate = new Date(task.created_at).toISOString().split('T')[0];
         return taskDate === date;
       }).length
   );
+
+  // Add SLA status counts calculation
+  const slaStatusCounts = {
+    breached: filteredTasks.filter(task => task.sla?.status === 'Breached').length,
+    completed: filteredTasks.filter(task => task.sla?.status === 'Completed').length
+  };
 
   return (
     <div>
       <Navbar />
       <div className="main-content container text-white">
         <h2 className="fw-bold mb-4 text-center">📊 Task Analytics</h2>
+
+        {/* Priority Filter Buttons */}
+        <div className="priority-filter text-center mb-4">
+          <button
+            className={`btn ${selectedPriority === 'All' ? 'btn-success' : 'btn-outline-success'} mx-1`}
+            onClick={() => setSelectedPriority('All')}
+          >
+            All
+          </button>
+          {priorityLabels.map((priority) => (
+            <button
+              key={priority}
+              className={`btn ${selectedPriority === priority ? 'btn-success' : 'btn-outline-success'} mx-1`}
+              onClick={() => setSelectedPriority(priority)}
+            >
+              {priority}
+            </button>
+          ))}
+        </div>
 
         <div className="row g-4">
           {/* Bar Chart */}
@@ -139,6 +198,41 @@ const Charts = () => {
               />
             </div>
           </div>
+
+          {/* SLA Chart */}
+<div className="col-md-6">
+  <div className="chart-card">
+    <h5 className="text-white text-center mb-3">SLA Status Distribution</h5>
+    <Doughnut
+      data={{
+        labels: ['Breached', 'Completed'],
+        datasets: [{
+          data: [
+            slaStatusCounts.breached,
+            slaStatusCounts.completed
+          ],
+          backgroundColor: ['#f44336', '#8bc34a']
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#fff' }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => 
+                `${context.label}: ${context.raw} tasks`
+            }
+          }
+        }
+      }}
+    />
+  </div>
+</div>
 
           {/* Line Chart */}
           <div className="col-md-12">

@@ -129,3 +129,33 @@ module.exports = {
   getPaginatedTasks,
   getTotalTaskCount,
 };
+
+exports.createTask = async (taskData) => {
+  const slaDeadline = calculateSLADeadline(taskData.priority);
+  
+  const query = `
+    INSERT INTO tasks (
+      title, 
+      description, 
+      priority, 
+      deadline, 
+      created_at, 
+      completed, 
+      assigned_to, 
+      sla_deadline,
+      sla_status
+    ) 
+    VALUES (?, ?, ?, ?, NOW(), false, ?, ?, 'On Track')
+  `;
+  
+  const values = [
+    taskData.title,
+    taskData.description,
+    taskData.priority,
+    taskData.deadline,
+    taskData.assigned_to,
+    slaDeadline
+  ];
+
+  return db.query(query, values);
+};

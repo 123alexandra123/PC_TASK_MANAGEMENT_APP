@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AddTaskModal.css';
 
-const AddTaskModal = ({ show, onClose, onSave }) => {
+const AddTaskModal = ({ show, onClose, onSave, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -23,17 +23,62 @@ const AddTaskModal = ({ show, onClose, onSave }) => {
     fetchTeams();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !deadline || !selectedTeam) return alert('Title, deadline, and team selection are required!');
-    onSave({ title, description, deadline, priority, selectedTeam });
-    onClose(); // închide modalul după salvare
-    setTitle('');
-    setDescription('');
-    setDeadline('');
-    setPriority('Medium');
-    setSelectedTeam('');
-  };
+    if (!title || !deadline || !selectedTeam) {
+      return alert('Title, deadline, and team selection are required!');
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          deadline,
+          priority,
+          assigned_to: selectedTeam
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Remove the onSave call since we're using onTaskAdded
+        onTaskAdded();
+        onClose();
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setDeadline('');
+        setPriority('Medium');
+        setSelectedTeam('');
+      } else {
+        const error = await response.json();
+        alert('Failed to create task: ' + error.message);
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      alert('Failed to create task. Please try again.');
+    }
+};
+
+// Add this helper function
+const calculateSLADeadline = (priority) => {
+  const now = new Date();
+  switch (priority) {
+    case 'High':
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    case 'Medium':
+      return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+    case 'Low':
+      return new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
+    default:
+      return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+  }
+};
 
   if (!show) return null;
 

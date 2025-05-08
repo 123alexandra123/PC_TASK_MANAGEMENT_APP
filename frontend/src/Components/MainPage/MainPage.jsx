@@ -7,12 +7,11 @@ import {
   createTask,
   updateTask,
   deleteTaskById,
-  toggleTaskStatus // Asigură-te că importi această funcție corect
+  toggleTaskStatus
 } from '../../services/taskService';
 import './MainPage.css';
 
 const MainPage = () => {
-  // Asigurăm inițializarea corectă a stării `tasks` ca array
   const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState('deadline');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -21,28 +20,33 @@ const MainPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [refresh, setRefresh] = useState(0);
 
   const tasksPerPage = 5;
 
   useEffect(() => {
     loadTasks();
-  }, [currentPage]);
+  }, [currentPage, refresh]);
 
-  // Verificăm răspunsul de la backend înainte de a seta starea
   const loadTasks = async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage);
-      setTasks(data.tasks || []); // Asigurăm că `tasks` este întotdeauna un array
-      setTotalPages(data.totalPages || 1); // Setăm un fallback pentru `totalPages`
+      setTasks(data.tasks || []);
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }
   };
 
+  const handleTaskAdded = () => {
+    setRefresh(prev => prev + 1);
+    loadTasks();
+  };
+
   const handleAddTask = async (newTask) => {
     try {
       const created = await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
-      await loadTasks(); // reîncarcă lista
+      handleTaskAdded();
       setShowAddModal(false);
     } catch (err) {
       console.error("Failed to add task:", err);
@@ -52,7 +56,7 @@ const MainPage = () => {
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
-      await loadTasks(); // reîncarcă lista
+      handleTaskAdded();
       setShowEditModal(false);
     } catch (err) {
       console.error("Failed to edit task:", err);
@@ -62,7 +66,7 @@ const MainPage = () => {
   const handleDeleteTask = async (id) => {
     try {
       await deleteTaskById(id);
-      await loadTasks();
+      handleTaskAdded();
     } catch (err) {
       console.error("Failed to delete task:", err);
     }
@@ -71,7 +75,7 @@ const MainPage = () => {
   const handleToggleComplete = async (id) => {
     try {
       await toggleTaskStatus(id);
-      await loadTasks();
+      handleTaskAdded();
     } catch (err) {
       console.error("Failed to toggle complete:", err);
     }
@@ -79,7 +83,7 @@ const MainPage = () => {
 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
-    if (sortBy === 'createdAt') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'priority') {
       const order = { High: 1, Medium: 2, Low: 3 };
@@ -129,41 +133,54 @@ const MainPage = () => {
             <p className="text-white">No tasks found for current filter.</p>
           ) : (
             filteredTasks.map(task => (
-              <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <div className="w-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={task.completed}
-                      onChange={() => handleToggleComplete(task.id)}
-                    />
-                    <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
-                      {task.title}
-                    </h5>
+              <div key={task.id} className="card p-3 mb-3 shadow-sm">
+                <div className="d-flex justify-content-between align-items-start">
+                  <div className="w-100">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={task.completed}
+                        onChange={() => handleToggleComplete(task.id)}
+                      />
+                      <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
+                        {task.title}
+                      </h5>
+                      {task.sla && (
+                        <span className={`sla-badge sla-${task.sla.status.toLowerCase()}`}>
+                          {task.sla.status}
+                        </span>
+                      )}
+                    </div>
+                    {task.description && (
+                      <p className="text-white mb-1 ps-4 small">{task.description}</p>
+                    )}
+                    <div className="d-flex justify-content-between text-muted small">
+                      <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
+                      <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
+                      <span>⚡ Priority: {task.priority}</span>
+                      {task.sla && (
+                        <span>⏰ SLA: {task.sla.timeRemaining}h remaining</span>
+                      )}
+                    </div>
                   </div>
-                  {task.description && (
-                    <p className="text-white mb-1 ps-4 small">{task.description}</p>
-                  )}
-                  <div className="d-flex justify-content-between text-muted small">
-                    <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
-                    <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
-                    <span>⚡ Priority: {task.priority}</span>
+                  <div className="d-flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setShowEditModal(true);
+                      }}
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTask(task.id)} 
+                      className="btn btn-outline-danger btn-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
-                </div>
-                <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedTask(task);
-                      setShowEditModal(true);
-                    }}
-                    className="btn btn-outline-primary btn-sm"
-                  >
-                    Edit
-                  </button>
-                  <button onClick={() => handleDeleteTask(task.id)} className="btn btn-outline-danger btn-sm">
-                    Delete
-                  </button>
                 </div>
               </div>
             ))
@@ -200,10 +217,10 @@ const MainPage = () => {
       </div>
 
       <AddTaskModal
-        show={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddTask}
-      />
+  show={showAddModal}
+  onClose={() => setShowAddModal(false)}
+  onTaskAdded={handleTaskAdded}  
+/>
 
       <EditTaskModal
         show={showEditModal}
