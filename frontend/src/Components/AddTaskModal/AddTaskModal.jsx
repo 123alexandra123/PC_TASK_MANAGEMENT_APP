@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './AddTaskModal.css';
 
-const AddTaskModal = ({ show, onClose, onSave, onTaskAdded }) => {
+const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -45,45 +45,40 @@ const AddTaskModal = ({ show, onClose, onSave, onTaskAdded }) => {
       });
 
       if (response.ok) {
-        const result = await response.json();
-        // Remove the onSave call since we're using onTaskAdded
-        onTaskAdded();
-        onClose();
-        // Reset form
         setTitle('');
         setDescription('');
         setDeadline('');
         setPriority('Medium');
         setSelectedTeam('');
+        onTaskAdded && onTaskAdded();
+        onClose();
       } else {
-        const error = await response.json();
-        alert('Failed to create task: ' + error.message);
+        const data = await response.json();
+        alert('Failed to create task: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Network error:', error);
-      alert('Failed to create task. Please try again.');
+      alert('Failed to create task: ' + error.message);
     }
-};
+  };
 
-// Add this helper function
-const calculateSLADeadline = (priority) => {
-  const now = new Date();
-  switch (priority) {
-    case 'High':
-      return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-    case 'Medium':
-      return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
-    case 'Low':
-      return new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
-    default:
-      return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
-  }
-};
+  const calculateSLADeadline = (priority) => {
+    const now = new Date();
+    switch (priority) {
+      case 'High':
+        return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+      case 'Medium':
+        return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+      case 'Low':
+        return new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
+      default:
+        return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+    }
+  };
 
   if (!show) return null;
 
   return (
-    <div className="modal-overlay">
+    <div className={`modal-overlay ${show ? 'show' : ''}`}>
       <div className="modal-content">
         <h4 className="mb-3">➕ Add New Task</h4>
         <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
@@ -126,7 +121,7 @@ const calculateSLADeadline = (priority) => {
           >
             <option value="">Select Team</option>
             {teams.map((team) => (
-              <option key={team.id} value={team.name}>{team.name}</option>
+              <option key={team.id} value={team.id}>{team.name}</option>
             ))}
           </select>
 

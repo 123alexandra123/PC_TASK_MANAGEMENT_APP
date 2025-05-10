@@ -1,15 +1,60 @@
 const db = require('../db');
 
-// add task
-const createTask = (task) => {
-  const { title, description, deadline, priority } = task;
+// Funcție helper pentru calculul SLA deadline
+const calculateSLADeadline = (priority) => {
+  const now = new Date(); // This will be our creation time reference
+  let hours;
+  
+  // Set SLA hours based on priority
+  switch (priority) {
+    case 'High': hours = 28; break;  
+    case 'Medium': hours = 52; break; 
+    case 'Low': hours = 76; break; 
+    default: hours = 48; 
+  }
+
+  // Calculate SLA deadline from current time (creation time)
+  const slaDeadline = new Date(now.getTime() + hours * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
+  return slaDeadline;
+};
+
+// Creare task (o singură implementare)
+const createTask = (taskData) => {
   return new Promise((resolve, reject) => {
+    const slaDeadline = calculateSLADeadline(taskData.priority);
+    
     const query = `
-      INSERT INTO tasks (title, description, deadline, priority)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO tasks (
+        title, 
+        description, 
+        priority, 
+        deadline, 
+        created_at, 
+        completed, 
+        assigned_to, 
+        sla_deadline
+      ) 
+      VALUES (?, ?, ?, ?, NOW(), false, ?, ?)
     `;
-    db.query(query, [title, description, deadline, priority], (err, result) => {
-      if (err) return reject(err);
+    
+    const values = [
+      taskData.title,
+      taskData.description || null,
+      taskData.priority,
+      taskData.deadline,
+      parseInt(taskData.assigned_to, 10), // Convert to integer
+      slaDeadline
+    ];
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error('Database error:', err);
+        return reject(err);
+      }
       resolve(result);
     });
   });
@@ -128,34 +173,4 @@ module.exports = {
   toggleTaskCompleted,
   getPaginatedTasks,
   getTotalTaskCount,
-};
-
-exports.createTask = async (taskData) => {
-  const slaDeadline = calculateSLADeadline(taskData.priority);
-  
-  const query = `
-    INSERT INTO tasks (
-      title, 
-      description, 
-      priority, 
-      deadline, 
-      created_at, 
-      completed, 
-      assigned_to, 
-      sla_deadline,
-      sla_status
-    ) 
-    VALUES (?, ?, ?, ?, NOW(), false, ?, ?, 'On Track')
-  `;
-  
-  const values = [
-    taskData.title,
-    taskData.description,
-    taskData.priority,
-    taskData.deadline,
-    taskData.assigned_to,
-    slaDeadline
-  ];
-
-  return db.query(query, values);
 };
