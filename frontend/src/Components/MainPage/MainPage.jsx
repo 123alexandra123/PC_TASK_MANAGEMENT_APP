@@ -24,7 +24,7 @@ const MainPage = () => {
   const [sortBy, setSortBy] = useState('deadline');
   const [filterPriority, setFilterPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -32,31 +32,37 @@ const MainPage = () => {
 
   const tasksPerPage = 5;
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const data = await getTasks(currentPage, tasksPerPage);
-        console.log('Received tasks:', data); // Add this debug log
-        if (data && data.tasks) {
-          setTasks(data.tasks);
-          setTotalPages(data.totalPages || 1);
-        } else {
-          console.error('No tasks data received');
-          setTasks([]);
-          setTotalPages(1);
-        }
-      } catch (err) {
-        console.error("Failed to load tasks:", err);
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks?page=${currentPage}&limit=${tasksPerPage}`);
+      const data = await response.json();
+      
+      if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+        setTotalPages(data.totalPages);
+      } else {
+        console.error('Received invalid tasks data:', data);
         setTasks([]);
-        setTotalPages(1);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    }
+  };
 
-    loadTasks();
-  }, [currentPage, refresh]);
+  useEffect(() => {
+    fetchTasks();
+  }, [currentPage]); // Add fetchTasks to dependencies if ESLint complains
 
-  const handleTaskAdded = () => {
-    setRefresh(prev => prev + 1);
+  const handleTaskAdded = async () => {
+    // Păstrăm pagina curentă
+    await fetchTasks(); // Reîncărcăm taskurile pentru pagina curentă
   };
 
   const handleAddTask = async (newTask) => {
@@ -79,12 +85,28 @@ const MainPage = () => {
     }
   };
 
-  const handleDeleteTask = async (id) => {
+  const handleDeleteTask = async (taskId) => {
     try {
-      await deleteTaskById(id);
-      handleTaskAdded();
-    } catch (err) {
-      console.error("Failed to delete task:", err);
+      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const isLastTaskOnPage = tasks.length === 1;
+        
+        // Remove task from state
+        setTasks(tasks.filter(task => task.id !== taskId));
+
+        // If it was the last task on page and not the first page
+        if (isLastTaskOnPage && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        } else {
+          // Refresh current page
+          fetchTasks();
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
     }
   };
 
@@ -126,12 +148,6 @@ const MainPage = () => {
   const filteredTasks = filterPriority === 'all'
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
-
-  const handlePageChange = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
-  };
 
   return (
     <div>
@@ -177,20 +193,19 @@ const MainPage = () => {
                       <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
                         {task.title}
                       </h5>
-                      {task.sla && (
-                        <span className={`sla-badge ${task.completed ? 'sla-completed' : 
-                          new Date() > new Date(task.sla_deadline) ? 'sla-breached' : 'sla-waiting'}`}>
-                          {task.completed ? 'Completed' : 
-                           new Date() > new Date(task.sla_deadline) ? 'Breached' : 'Waiting'}
-                        </span>
-                      )}
+                      <span className={`sla-badge ${
+                        task.completed ? 'sla-completed' : 
+                        task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                      }`}>
+                        {task.sla?.status || 'Waiting'}
+                      </span>
                     </div>
                     {task.description && (
                       <p className="text-white mb-1 ps-4 small">{task.description}</p>
                     )}
                     <div className="d-flex justify-content-between text-muted small">
                       <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
-                      <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
+                      <span>👥 Team: {task.team_name || 'Unassigned'}</span>
                       <span>⚡ Priority: {task.priority}</span>
                       <span>⏰ SLA: {task.sla?.timeRemaining || 0}h remaining</span>
                     </div>
@@ -227,7 +242,7 @@ const MainPage = () => {
             >
               ⬅ Prev
             </button>
-            {[...Array(totalPages)].map((_, i) => (
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i + 1}
                 className={`btn btn-sm ${currentPage === i + 1 ? 'btn-light' : 'btn-outline-light'}`}

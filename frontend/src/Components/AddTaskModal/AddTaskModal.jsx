@@ -50,6 +50,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
         setDeadline('');
         setPriority('Medium');
         setSelectedTeam('');
+        // Call the parent's onTaskAdded callback
         onTaskAdded && onTaskAdded();
         onClose();
       } else {

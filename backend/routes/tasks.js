@@ -73,34 +73,20 @@ const checkSLAStatus = (task) => {
 // Get all tasks with pagination and filtering
 router.get("/", async (req, res) => {
   try {
-    const { page = 1, limit = 5 } = req.query;
-    const offset = (page - 1) * limit;
-
-    const tasks = await getPaginatedTasks(offset, parseInt(limit));
-    console.log('Retrieved tasks:', tasks); // Add this debug log
-
-    const tasksWithSLA = tasks.map(task => {
-      const slaInfo = checkSLAStatus(task);
-      return {
-        ...task,
-        sla: {
-          status: slaInfo.status,
-          deadline: task.sla_deadline,
-          timeRemaining: slaInfo.timeRemaining
-        }
-      };
-    });
-
-    const totalTasks = await getTotalTaskCount(); // Make sure this is defined
-    console.log('Total tasks:', totalTasks); // Add this debug log
-
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    
+    const tasks = await getPaginatedTasks(page, limit);
+    const totalCount = await getTotalTaskCount();
+    
     res.json({
-      tasks: tasksWithSLA,
-      totalPages: Math.ceil(totalTasks / limit),
-      currentPage: parseInt(page)
+      tasks: tasks, // Make sure we send an array of tasks
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit)
     });
   } catch (err) {
-    console.error('Error fetching tasks:', err);
+    console.error('Error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -190,6 +176,15 @@ router.patch("/:id/toggle", async (req, res) => {
     };
     
     res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/count", async (req, res) => {
+  try {
+    const count = await getTotalTaskCount();
+    res.json({ count });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

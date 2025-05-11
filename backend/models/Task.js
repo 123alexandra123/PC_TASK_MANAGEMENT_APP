@@ -29,14 +29,8 @@ const createTask = (taskData) => {
     
     const query = `
       INSERT INTO tasks (
-        title, 
-        description, 
-        priority, 
-        deadline, 
-        created_at, 
-        completed, 
-        assigned_to, 
-        sla_deadline
+        title, description, priority, deadline, 
+        created_at, completed, assigned_to, sla_deadline
       ) 
       VALUES (?, ?, ?, ?, NOW(), false, ?, ?)
     `;
@@ -46,15 +40,12 @@ const createTask = (taskData) => {
       taskData.description || null,
       taskData.priority,
       taskData.deadline,
-      parseInt(taskData.assigned_to, 10), // Convert to integer
+      parseInt(taskData.assigned_to, 10),
       slaDeadline
     ];
 
     db.query(query, values, (err, result) => {
-      if (err) {
-        console.error('Database error:', err);
-        return reject(err);
-      }
+      if (err) return reject(err);
       resolve(result);
     });
   });
@@ -125,41 +116,54 @@ const toggleTaskCompleted = (id) => {
 };
 
 // funcție pentru a obține task-urile paginate
-const getPaginatedTasks = (offset, limit, filter) => {
+const getPaginatedTasks = (page, limit) => {
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM tasks";
-    const params = [];
+    const currentPage = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 5);
+    const offset = (currentPage - 1) * limitNum;
+    
+    const query = `
+      SELECT 
+        t.*,
+        teams.name as team_name,
+        CASE 
+          WHEN t.completed = 1 THEN 'Completed'
+          WHEN NOW() > t.sla_deadline THEN 'Breached'
+          ELSE 'Waiting'
+        END as sla_status,
+        TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
+      FROM tasks t
+      LEFT JOIN teams ON t.assigned_to = teams.id
+      ORDER BY t.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
 
-    if (filter === 'completed') {
-      query += " WHERE completed = 1";
-    } else if (filter === 'pending') {
-      query += " WHERE completed = 0";
-    }
-
-    query += " LIMIT ? OFFSET ?";
-    params.push(limit, offset);
-
-    db.query(query, params, (err, results) => {
+    db.query(query, [limitNum, offset], (err, results) => {
       if (err) return reject(err);
-      resolve(results);
+      
+      const tasksWithSla = results.map(task => ({
+        ...task,
+        sla: {
+          status: task.sla_status,
+          timeRemaining: Math.max(0, task.hours_remaining || 0)
+        }
+      }));
+
+      resolve(tasksWithSla);
     });
   });
 };
 
 // funcție pentru a obține numărul total de task-uri
-const getTotalTaskCount = (filter) => {
+const getTotalTaskCount = () => {
   return new Promise((resolve, reject) => {
-    let query = "SELECT COUNT(*) AS count FROM tasks";
-    const params = [];
-
-    if (filter === 'completed') {
-      query += " WHERE completed = 1";
-    } else if (filter === 'pending') {
-      query += " WHERE completed = 0";
-    }
-
-    db.query(query, params, (err, results) => {
-      if (err) return reject(err);
+    const query = "SELECT COUNT(*) as count FROM tasks";
+    
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error counting tasks:', err);
+        return reject(err);
+      }
       resolve(results[0].count);
     });
   });
