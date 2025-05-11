@@ -4,26 +4,23 @@ import './EditTaskModal.css';
 const EditTaskModal = ({ show, onClose, onSave, task }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [deadline, setDeadline] = useState('');
     const [priority, setPriority] = useState('Medium');
   
     useEffect(() => {
       if (task) {
         setTitle(task.title);
         setDescription(task.description || '');
-        setDeadline(task.deadline);
         setPriority(task.priority);
       }
     }, [task]);
   
     const handleSubmit = (e) => {
       e.preventDefault();
-      if (!title || !deadline) return;
+      if (!title) return;
       onSave({
         ...task,
         title,
         description,
-        deadline,
         priority,
         completed: task.completed, // Include câmpul `completed`
       });
@@ -49,12 +46,6 @@ const EditTaskModal = ({ show, onClose, onSave, task }) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             ></textarea>
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              required
-            />
             <select value={priority} onChange={(e) => setPriority(e.target.value)}>
               <option value="High">High</option>
               <option value="Medium">Medium</option>

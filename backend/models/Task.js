@@ -54,26 +54,45 @@ const createTask = (taskData) => {
 
 // update task
 const updateTask = (id, updatedTask) => {
-    console.log("Updating task with ID:", id); // Log ID-ul task-ului
-    console.log("Task data:", updatedTask); // Log datele task-ului
+  console.log("Updating task with ID:", id); // Log ID-ul task-ului
+  console.log("Task data:", updatedTask); // Log datele task-ului
 
-    const { title, description, deadline, priority, completed } = updatedTask;
-    return new Promise((resolve, reject) => {
+  const { title, description, deadline, priority, completed } = updatedTask;
+
+  return new Promise((resolve, reject) => {
+    // Fetch the current priority from the database
+    const fetchQuery = `SELECT priority FROM tasks WHERE id = ?`;
+    db.query(fetchQuery, [id], (err, results) => {
+      if (err) {
+        console.error("Error fetching current priority:", err);
+        return reject(err);
+      }
+
+      const currentPriority = results[0]?.priority;
+
+      // Check if the priority has changed
       const query = `
         UPDATE tasks
         SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?
+        ${priority && priority !== currentPriority ? ', sla_deadline = ?' : ''}
         WHERE id = ?
       `;
-      db.query(query, [title, description, deadline, priority, completed, id], (err, result) => {
+
+      const values = priority && priority !== currentPriority
+        ? [title, description, deadline, priority, completed, calculateSLADeadline(priority), id]
+        : [title, description, deadline, priority, completed, id];
+
+      db.query(query, values, (err, result) => {
         if (err) {
-          console.error("Error executing query:", err); // Log eroarea
+          console.error("Error executing query:", err);
           return reject(err);
         }
-        console.log("Query result:", result); // Log rezultatul query-ului
+        console.log("Query result:", result);
         resolve(result);
       });
     });
-  };
+  });
+};
 
 // delete task
 const deleteTask = (id) => {
@@ -101,13 +120,20 @@ const toggleTaskCompleted = (id) => {
   });
 };
 
-// funcție pentru a obține task-urile paginate
-const getPaginatedTasks = (page, limit) => {
+// funcție pentru a obține task-urile paginate cu filtrare
+const getPaginatedTasks = (page, limit, filter = 'all') => {
   return new Promise((resolve, reject) => {
     const currentPage = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.max(1, parseInt(limit) || 5);
     const offset = (currentPage - 1) * limitNum;
-    
+
+    let filterCondition = '';
+    if (filter === 'completed') {
+      filterCondition = 'WHERE t.completed = 1';
+    } else if (filter === 'pending') {
+      filterCondition = 'WHERE t.completed = 0';
+    }
+
     const query = `
       SELECT 
         t.*,
@@ -120,13 +146,14 @@ const getPaginatedTasks = (page, limit) => {
         TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
       FROM tasks t
       LEFT JOIN teams ON t.assigned_to = teams.id
+      ${filterCondition}
       ORDER BY t.created_at DESC
       LIMIT ? OFFSET ?
     `;
 
     db.query(query, [limitNum, offset], (err, results) => {
       if (err) return reject(err);
-      
+
       const tasksWithSla = results.map(task => ({
         ...task,
         sla: {

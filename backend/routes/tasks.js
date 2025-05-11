@@ -74,12 +74,13 @@ router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    
-    const tasks = await getPaginatedTasks(page, limit);
+    const filter = req.query.filter || 'all'; // Adăugare parametru pentru filtrare
+
+    const tasks = await getPaginatedTasks(page, limit, filter);
     const totalCount = await getTotalTaskCount();
-    
+
     res.json({
-      tasks: tasks, // Make sure we send an array of tasks
+      tasks: tasks, // Asigurare că trimitem un array de task-uri
       totalCount,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit)

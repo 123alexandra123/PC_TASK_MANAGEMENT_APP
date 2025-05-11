@@ -1,9 +1,9 @@
 // src/services/taskService.js
 const API_URL = "http://localhost:5000/api/tasks";
 
-export const getTasks = async (page = 1, limit = 5) => {
+export const getTasks = async (page = 1, limit = 5, filter = 'all') => {
   try {
-    const response = await fetch(`http://localhost:5000/api/tasks?page=${page}&limit=${limit}`);
+    const response = await fetch(`${API_URL}?page=${page}&limit=${limit}&filter=${filter}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
