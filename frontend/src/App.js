@@ -1,13 +1,39 @@
 // App.jsx
 import React, { useEffect, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import LoginRegister from './Components/LoginRegister/LoginRegister';
 import MainPage from './Components/MainPage/MainPage';
 import CompletedTasks from './Components/CompletedTasks/CompletedTasks';
 import PendingTasks from './Components/PendingTasks/PendingTasks';
 import Charts from './Components/Charts/Charts';
 import Profile from './Components/Profile/Profile';
+
+function ProtectedRoute({ children }) {
+  const navigate = useNavigate();
+  const isAuthenticated = !!localStorage.getItem('token');
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  return isAuthenticated ? children : null;
+}
+
+function PublicRoute({ children }) {
+  const navigate = useNavigate();
+  const isAuthenticated = !!localStorage.getItem('token');
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/main');
+    }
+  }, [isAuthenticated, navigate]);
+
+  return !isAuthenticated ? children : null;
+}
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -72,43 +98,77 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<LoginRegister />} />
-      <Route path="/login" element={<LoginRegister />} />
+      <Route
+        path="/"
+        element={
+          <PublicRoute>
+            <LoginRegister />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginRegister />
+          </PublicRoute>
+        }
+      />
       <Route
         path="/main"
         element={
-          <MainPage
-            tasks={tasks}
-            toggleComplete={toggleComplete}
-            deleteTask={deleteTask}
-            editTask={editTask}
-            addTask={addTask}
-          />
+          <ProtectedRoute>
+            <MainPage
+              tasks={tasks}
+              toggleComplete={toggleComplete}
+              deleteTask={deleteTask}
+              editTask={editTask}
+              addTask={addTask}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/completed"
         element={
-          <CompletedTasks
-            tasks={tasks}
-            toggleComplete={toggleComplete}
-            deleteTask={deleteTask}
-          />
+          <ProtectedRoute>
+            <CompletedTasks
+              tasks={tasks}
+              toggleComplete={toggleComplete}
+              deleteTask={deleteTask}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/pending"
         element={
-          <PendingTasks
-            tasks={tasks}
-            toggleComplete={toggleComplete}
-            deleteTask={deleteTask}
-            editTask={editTask}
-          />
+          <ProtectedRoute>
+            <PendingTasks
+              tasks={tasks}
+              toggleComplete={toggleComplete}
+              deleteTask={deleteTask}
+              editTask={editTask}
+            />
+          </ProtectedRoute>
         }
       />
-      <Route path="/charts" element={<Charts tasks={tasks} />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route
+        path="/charts"
+        element={
+          <ProtectedRoute>
+            <Charts tasks={tasks} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

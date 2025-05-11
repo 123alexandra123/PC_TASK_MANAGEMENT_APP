@@ -7,6 +7,7 @@ const {
   getPaginatedTasks,
   getTotalTaskCount
 } = require("../models/Task");
+const authenticateJWT = require('./authMiddleware');
 
 const router = express.Router();
 
@@ -188,6 +189,11 @@ router.get("/count", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Protected route example
+router.get('/protected-route', authenticateJWT, (req, res) => {
+  res.json({ message: 'This is a protected route.', user: req.user });
 });
 
 module.exports = router;
