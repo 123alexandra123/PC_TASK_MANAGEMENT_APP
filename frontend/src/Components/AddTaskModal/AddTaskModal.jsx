@@ -4,7 +4,6 @@ import './AddTaskModal.css';
 const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -25,8 +24,8 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !deadline || !selectedTeam) {
-      return alert('Title, deadline, and team selection are required!');
+    if (!title || !selectedTeam) {
+      return alert('Title and team selection are required!');
     }
 
     try {
@@ -38,7 +37,6 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
         body: JSON.stringify({
           title,
           description,
-          deadline,
           priority,
           assigned_to: selectedTeam
         })
@@ -47,7 +45,6 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
       if (response.ok) {
         setTitle('');
         setDescription('');
-        setDeadline('');
         setPriority('Medium');
         setSelectedTeam('');
         // Call the parent's onTaskAdded callback
@@ -59,20 +56,6 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
       }
     } catch (error) {
       alert('Failed to create task: ' + error.message);
-    }
-  };
-
-  const calculateSLADeadline = (priority) => {
-    const now = new Date();
-    switch (priority) {
-      case 'High':
-        return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-      case 'Medium':
-        return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
-      case 'Low':
-        return new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
-      default:
-        return new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
     }
   };
 
@@ -96,13 +79,6 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="form-control"
-          />
-          <input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            required
             className="form-control"
           />
           <select

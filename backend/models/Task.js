@@ -2,24 +2,25 @@ const db = require('../db');
 
 // Funcție helper pentru calculul SLA deadline
 const calculateSLADeadline = (priority) => {
-  const now = new Date(); // This will be our creation time reference
+  const now = new Date();
   let hours;
   
   // Set SLA hours based on priority
   switch (priority) {
-    case 'High': hours = 28; break;  
-    case 'Medium': hours = 52; break; 
-    case 'Low': hours = 76; break; 
-    default: hours = 48; 
+    case 'High': hours = 27; break;  // Strict 24 hours for High
+    case 'Medium': hours = 51; break;
+    case 'Low': hours = 75; break;
+    default: hours = 48;
   }
 
-  // Calculate SLA deadline from current time (creation time)
-  const slaDeadline = new Date(now.getTime() + hours * 60 * 60 * 1000)
+  // Calculate SLA deadline and adjust for timezone
+  const slaDeadline = new Date(now.getTime() + (hours * 60 * 60 * 1000));
+  
+  // Format to MySQL DATETIME without timezone offset
+  return slaDeadline
     .toISOString()
     .slice(0, 19)
     .replace('T', ' ');
-
-  return slaDeadline;
 };
 
 // Creare task (o singură implementare)
