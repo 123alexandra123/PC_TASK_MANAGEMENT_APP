@@ -1,14 +1,51 @@
 const db = require('../db');
 
-// add task
-const createTask = (task) => {
-  const { title, description, deadline, priority } = task;
+// Funcție helper pentru calculul SLA deadline
+const calculateSLADeadline = (priority) => {
+  const now = new Date();
+  let hours;
+  
+  // Set SLA hours based on priority
+  switch (priority) {
+    case 'High': hours = 27; break;  // Strict 24 hours for High
+    case 'Medium': hours = 51; break;
+    case 'Low': hours = 75; break;
+    default: hours = 48;
+  }
+
+  // Calculate SLA deadline and adjust for timezone
+  const slaDeadline = new Date(now.getTime() + (hours * 60 * 60 * 1000));
+  
+  // Format to MySQL DATETIME without timezone offset
+  return slaDeadline
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+};
+
+// Creare task (o singură implementare)
+const createTask = (taskData) => {
   return new Promise((resolve, reject) => {
+    const slaDeadline = calculateSLADeadline(taskData.priority);
+    
     const query = `
-      INSERT INTO tasks (title, description, deadline, priority)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO tasks (
+        title, description, priority, deadline, 
+        created_at, completed, assigned_to, sla_deadline
+      ) 
+      VALUES (?, ?, ?, ?, NOW(), false, ?, ?)
     `;
-    db.query(query, [title, description, deadline, priority], (err, result) => {
+    
+    const values = [
+      taskData.title,
+      taskData.description || null,
+      taskData.priority,
+      taskData.deadline,
+      parseInt(taskData.assigned_to, 10),
+      slaDeadline
+    ];
+
+    db.query(query, values, (err, result) => {
       if (err) return reject(err);
       resolve(result);
     });
@@ -65,41 +102,54 @@ const toggleTaskCompleted = (id) => {
 };
 
 // funcție pentru a obține task-urile paginate
-const getPaginatedTasks = (offset, limit, filter) => {
+const getPaginatedTasks = (page, limit) => {
   return new Promise((resolve, reject) => {
-    let query = "SELECT * FROM tasks";
-    const params = [];
+    const currentPage = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 5);
+    const offset = (currentPage - 1) * limitNum;
+    
+    const query = `
+      SELECT 
+        t.*,
+        teams.name as team_name,
+        CASE 
+          WHEN t.completed = 1 THEN 'Completed'
+          WHEN NOW() > t.sla_deadline THEN 'Breached'
+          ELSE 'Waiting'
+        END as sla_status,
+        TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
+      FROM tasks t
+      LEFT JOIN teams ON t.assigned_to = teams.id
+      ORDER BY t.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
 
-    if (filter === 'completed') {
-      query += " WHERE completed = 1";
-    } else if (filter === 'pending') {
-      query += " WHERE completed = 0";
-    }
-
-    query += " LIMIT ? OFFSET ?";
-    params.push(limit, offset);
-
-    db.query(query, params, (err, results) => {
+    db.query(query, [limitNum, offset], (err, results) => {
       if (err) return reject(err);
-      resolve(results);
+      
+      const tasksWithSla = results.map(task => ({
+        ...task,
+        sla: {
+          status: task.sla_status,
+          timeRemaining: Math.max(0, task.hours_remaining || 0)
+        }
+      }));
+
+      resolve(tasksWithSla);
     });
   });
 };
 
 // funcție pentru a obține numărul total de task-uri
-const getTotalTaskCount = (filter) => {
+const getTotalTaskCount = () => {
   return new Promise((resolve, reject) => {
-    let query = "SELECT COUNT(*) AS count FROM tasks";
-    const params = [];
-
-    if (filter === 'completed') {
-      query += " WHERE completed = 1";
-    } else if (filter === 'pending') {
-      query += " WHERE completed = 0";
-    }
-
-    db.query(query, params, (err, results) => {
-      if (err) return reject(err);
+    const query = "SELECT COUNT(*) as count FROM tasks";
+    
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error counting tasks:', err);
+        return reject(err);
+      }
       resolve(results[0].count);
     });
   });

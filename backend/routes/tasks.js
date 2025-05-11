@@ -10,46 +10,146 @@ const {
 
 const router = express.Router();
 
-// add task
+// Helper function for SLA calculation
+const calculateSLADeadline = (priority) => {
+  const now = new Date();
+  let hours;
+
+  switch (priority) {
+    case 'High':
+      hours = 24;
+      break;
+    case 'Medium':
+      hours = 48;
+      break;
+    case 'Low':
+      hours = 72;
+      break;
+    default:
+      hours = 48;
+  }
+
+  const deadline = new Date(now.getTime() + hours * 60 * 60 * 1000);
+  return deadline.toISOString();
+};
+
+// Helper function for checking SLA status
+const checkSLAStatus = (task) => {
+  const now = new Date();
+  const slaDeadline = new Date(task.sla_deadline);
+
+  // Add debug logging
+  console.log('SLA Check for task:', {
+    id: task.id,
+    completed: task.completed,
+    deadline: slaDeadline,
+    now: now,
+    diff: slaDeadline - now
+  });
+
+  if (task.completed) {
+    return {
+      status: 'Completed',
+      timeRemaining: 0
+    };
+  }
+
+  const timeRemaining = Math.floor((slaDeadline - now) / (1000 * 60 * 60));
+
+  if (timeRemaining > 0) {
+    return {
+      status: 'Waiting',
+      timeRemaining: timeRemaining
+    };
+  }
+
+  return {
+    status: 'Breached',
+    timeRemaining: 0
+  };
+};
+
+// Get all tasks with pagination and filtering
+router.get("/", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    
+    const tasks = await getPaginatedTasks(page, limit);
+    const totalCount = await getTotalTaskCount();
+    
+    res.json({
+      tasks: tasks, // Make sure we send an array of tasks
+      totalCount,
+      currentPage: page,
+      totalPages: Math.ceil(totalCount / limit)
+    });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create new task
 router.post("/", async (req, res) => {
   try {
-    const result = await createTask({ ...req.body, assigned_to: req.body.assigned_to });
-    res.status(201).json({ message: "Task added", taskId: result.insertId });
+    if (!req.body.priority) {
+      return res.status(400).json({ error: "Priority is required for SLA calculation" });
+    }
+
+    const slaDeadline = calculateSLADeadline(req.body.priority);
+    const taskData = {
+      ...req.body,
+      sla_deadline: slaDeadline
+    };
+
+    const result = await createTask(taskData);
+    
+    // Return the newly created task with SLA info
+    const newTask = {
+      id: result.insertId,
+      ...taskData,
+      sla: {
+        status: 'Waiting',
+        deadline: slaDeadline,
+        timeRemaining: Math.floor((new Date(slaDeadline) - new Date()) / (1000 * 60 * 60))
+      }
+    };
+
+    res.status(201).json(newTask);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// obtine toate task-urile cu paginare și filtrare
-router.get("/", async (req, res) => {
+// Update task
+router.put("/:id", async (req, res) => {
   try {
-    const { page = 1, limit = 5, filter } = req.query; // Accept `filter` query param
-    const offset = (page - 1) * limit;
+    const updatedTask = {
+      ...req.body,
+      sla_deadline: req.body.priority ? calculateSLADeadline(req.body.priority) : undefined
+    };
 
-    const tasks = await getPaginatedTasks(offset, parseInt(limit), filter); // Pass `filter` to the model function
-    const totalTasks = await getTotalTaskCount(filter); // Pass `filter` to count only relevant tasks
-
+    await updateTask(req.params.id, updatedTask);
+    
+    // Get the updated task with new SLA info
+    const task = { id: req.params.id, ...updatedTask };
+    const slaInfo = checkSLAStatus(task);
+    
     res.json({
-      tasks,
-      totalPages: Math.ceil(totalTasks / limit),
-      currentPage: parseInt(page),
+      ...task,
+      sla: {
+        status: slaInfo.status,
+        deadline: task.sla_deadline,
+        timeRemaining: slaInfo.timeRemaining
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// update task
-router.put("/:id", async (req, res) => {
-  try {
-    await updateTask(req.params.id, req.body);
-    res.json({ message: "Task updated" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// delete task
+// Delete task
 router.delete("/:id", async (req, res) => {
   try {
     await deleteTask(req.params.id);
@@ -59,11 +159,31 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// toggle task completion
+// Toggle task completion
 router.patch("/:id/toggle", async (req, res) => {
   try {
     const task = await toggleTaskCompleted(req.params.id);
-    res.json(task);
+    const slaInfo = checkSLAStatus(task);
+    
+    const updatedTask = {
+      ...task,
+      sla: {
+        status: slaInfo.status,
+        deadline: task.sla_deadline,
+        timeRemaining: slaInfo.timeRemaining
+      }
+    };
+    
+    res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/count", async (req, res) => {
+  try {
+    const count = await getTotalTaskCount();
+    res.json({ count });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

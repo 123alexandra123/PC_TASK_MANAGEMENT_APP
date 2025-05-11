@@ -77,11 +77,29 @@ body {
 
   .completed-task-title {
     text-decoration: line-through;
-    color: #57f0a992 !important; /* sau orice culoare vrei tu */
+    color: #57f0a992 !important; 
     font-weight: 600;
   }
   
+  .sla-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+  }
   
+  .sla-waiting {
+    background-color: #ffeb3b;
+    color: #000;
+  }
   
+  .sla-breached {
+    background-color: #f44336;
+  }
   
-  
+  .sla-completed {
+    background-color: #8bc34a;
+  }
+
+
