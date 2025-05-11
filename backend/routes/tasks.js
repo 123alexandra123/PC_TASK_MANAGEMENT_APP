@@ -78,7 +78,7 @@ router.get("/", async (req, res) => {
     const filter = req.query.filter || 'all'; // Adăugare parametru pentru filtrare
 
     const tasks = await getPaginatedTasks(page, limit, filter);
-    const totalCount = await getTotalTaskCount();
+    const totalCount = await getTotalTaskCount(filter);
 
     res.json({
       tasks: tasks, // Asigurare că trimitem un array de task-uri

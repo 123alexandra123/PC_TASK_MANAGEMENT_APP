@@ -168,10 +168,17 @@ const getPaginatedTasks = (page, limit, filter = 'all') => {
 };
 
 // funcție pentru a obține numărul total de task-uri
-const getTotalTaskCount = () => {
+const getTotalTaskCount = (filter = 'all') => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT COUNT(*) as count FROM tasks";
-    
+    let filterCondition = '';
+    if (filter === 'completed') {
+      filterCondition = 'WHERE completed = 1';
+    } else if (filter === 'pending') {
+      filterCondition = 'WHERE completed = 0';
+    }
+
+    const query = `SELECT COUNT(*) as count FROM tasks ${filterCondition}`;
+
     db.query(query, (err, results) => {
       if (err) {
         console.error('Error counting tasks:', err);
