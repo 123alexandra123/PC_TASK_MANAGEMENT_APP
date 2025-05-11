@@ -85,6 +85,12 @@ const Charts = () => {
     ).length
   };
 
+  // Team-wise task counts
+  const teamLabels = [...new Set(filteredTasks.map(task => task.team_name))];
+  const teamCounts = teamLabels.map(
+    (team) => filteredTasks.filter((task) => task.team_name === team).length
+  );
+
   return (
     <div>
       <Navbar />
@@ -192,6 +198,32 @@ const Charts = () => {
                         label: (context) => `${context.label}: ${context.raw} tasks`
                       }
                     }
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Tasks by Team Chart */}
+          <div className="col-md-6">
+            <div className="chart-card">
+              <h5 className="text-white text-center mb-3">Tasks by Team</h5>
+              <Bar
+                data={{
+                  labels: teamLabels,
+                  datasets: [{
+                    label: 'Number of Tasks',
+                    data: teamCounts,
+                    backgroundColor: ['#42a5f5', '#66bb6a', '#ffa726', '#ab47bc', '#ef5350']
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { ticks: { color: '#ccc', precision: 0 } },
+                    x: { ticks: { color: '#ccc' } }
                   }
                 }}
               />
