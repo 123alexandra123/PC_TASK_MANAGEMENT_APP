@@ -30,24 +30,43 @@ ChartJS.register(
 const Charts = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedPriority, setSelectedPriority] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const fetchTasks = async () => {
+    try {
+      let url = 'http://localhost:5000/api/tasks?page=1&limit=100';
+      
+      if (startDate) url += `&startDate=${startDate}`;
+      if (endDate) url += `&endDate=${endDate}`;
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      setTasks(data.tasks || []);
+    } catch (err) {
+      console.error('Failed to load tasks:', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/tasks?page=1&limit=100');
-        const data = await res.json();
-        setTasks(data.tasks || []);
-      } catch (err) {
-        console.error('Failed to load tasks:', err);
-      }
-    };
-
     fetchTasks();
-  }, []);
+  }, [startDate, endDate]);
 
-  const filteredTasks = selectedPriority === 'All' 
-    ? tasks 
-    : tasks.filter(task => task.priority === selectedPriority);
+  // Filter tasks by both date and priority
+  const filteredTasks = tasks.filter(task => {
+    const matchesPriority = selectedPriority === 'All' || task.priority === selectedPriority;
+    const taskDate = new Date(task.created_at).toISOString().split('T')[0];
+    const matchesDate = (!startDate || taskDate >= startDate) && 
+                       (!endDate || taskDate <= endDate);
+    return matchesPriority && matchesDate;
+  });
+
+  const handleClearFilters = () => {
+    setSelectedPriority('All');
+    setStartDate('');
+    setEndDate('');
+  };
 
   // Priority counts
   const priorityLabels = ['High', 'Medium', 'Low'];
@@ -95,26 +114,75 @@ const Charts = () => {
     <div>
       <Navbar />
       <div className="main-content container text-white">
-        <h2 className="fw-bold mb-4 text-center">📊 Task Analytics</h2>
-
-        {/* Priority Filter Buttons */}
-        <div className="priority-filter text-center mb-4">
-          <button
-            className={`btn ${selectedPriority === 'All' ? 'btn-success' : 'btn-outline-success'} mx-1`}
-            onClick={() => setSelectedPriority('All')}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2 className="fw-bold">📊 Task Analytics</h2>
+          <button 
+            className="btn btn-outline-light"
+            onClick={() => setShowFilters(!showFilters)}
           >
-            All
+            {showFilters ? 'Hide Filters' : 'Show Filters'} 🔍
           </button>
-          {priorityLabels.map((priority) => (
-            <button
-              key={priority}
-              className={`btn ${selectedPriority === priority ? 'btn-success' : 'btn-outline-success'} mx-1`}
-              onClick={() => setSelectedPriority(priority)}
-            >
-              {priority}
-            </button>
-          ))}
         </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="filters-panel mb-4 p-3 bg-dark rounded border border-secondary">
+            <div className="row g-3">
+              {/* Priority Filter */}
+              <div className="col-12">
+                <h5 className="mb-2">Filter by Priority</h5>
+                <div className="d-flex gap-2">
+                  <button
+                    className={`btn ${selectedPriority === 'All' ? 'btn-light' : 'btn-outline-light'}`}
+                    onClick={() => setSelectedPriority('All')}
+                  >
+                    All
+                  </button>
+                  {['High', 'Medium', 'Low'].map((priority) => (
+                    <button
+                      key={priority}
+                      className={`btn ${selectedPriority === priority ? 'btn-light' : 'btn-outline-light'}`}
+                      onClick={() => setSelectedPriority(priority)}
+                    >
+                      {priority}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date Filter */}
+              <div className="col-12">
+                <h5 className="mb-2">Filter by Date Range</h5>
+                <div className="d-flex gap-3 align-items-center">
+                  <div className="d-flex align-items-center gap-2">
+                    <label>From:</label>
+                    <input
+                      type="date"
+                      className="form-control bg-dark text-white"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    <label>To:</label>
+                    <input
+                      type="date"
+                      className="form-control bg-dark text-white"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-outline-light"
+                    onClick={handleClearFilters}
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="row g-4">
           {/* Priority Bar Chart */}
