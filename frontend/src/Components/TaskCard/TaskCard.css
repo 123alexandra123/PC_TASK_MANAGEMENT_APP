@@ -1,0 +1,27 @@
+.sla-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .sla-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .time-remaining {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }

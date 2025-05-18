@@ -1,6 +1,6 @@
 const db = require('../db');
 
-// Obține toate echipele
+// obtine echipele din baza de date
 const getAllTeams = () => {
   return new Promise((resolve, reject) => {
     db.query('SELECT * FROM teams', (err, results) => {

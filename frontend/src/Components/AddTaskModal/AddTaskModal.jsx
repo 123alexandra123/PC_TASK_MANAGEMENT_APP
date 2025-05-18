@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './AddTaskModal.css';
 
-const AddTaskModal = ({ show, onClose, onSave }) => {
+const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -23,22 +22,47 @@ const AddTaskModal = ({ show, onClose, onSave }) => {
     fetchTeams();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !deadline || !selectedTeam) return alert('Title, deadline, and team selection are required!');
-    onSave({ title, description, deadline, priority, selectedTeam });
-    onClose(); // închide modalul după salvare
-    setTitle('');
-    setDescription('');
-    setDeadline('');
-    setPriority('Medium');
-    setSelectedTeam('');
+    if (!title || !selectedTeam) {
+      return alert('Title and team selection are required!');
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          priority,
+          assigned_to: selectedTeam
+        })
+      });
+
+      if (response.ok) {
+        setTitle('');
+        setDescription('');
+        setPriority('Medium');
+        setSelectedTeam('');
+        // Call the parent's onTaskAdded callback
+        onTaskAdded && onTaskAdded();
+        onClose();
+      } else {
+        const data = await response.json();
+        alert('Failed to create task: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Failed to create task: ' + error.message);
+    }
   };
 
   if (!show) return null;
 
   return (
-    <div className="modal-overlay">
+    <div className={`modal-overlay ${show ? 'show' : ''}`}>
       <div className="modal-content">
         <h4 className="mb-3">➕ Add New Task</h4>
         <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
@@ -55,13 +79,6 @@ const AddTaskModal = ({ show, onClose, onSave }) => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="form-control"
-          />
-          <input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            required
             className="form-control"
           />
           <select
@@ -81,7 +98,7 @@ const AddTaskModal = ({ show, onClose, onSave }) => {
           >
             <option value="">Select Team</option>
             {teams.map((team) => (
-              <option key={team.id} value={team.name}>{team.name}</option>
+              <option key={team.id} value={team.id}>{team.name}</option>
             ))}
           </select>
 

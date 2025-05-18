@@ -7,42 +7,68 @@ import {
   createTask,
   updateTask,
   deleteTaskById,
-  toggleTaskStatus // Asigură-te că importi această funcție corect
+  toggleTaskStatus
 } from '../../services/taskService';
 import './MainPage.css';
 
+const calculateTimeRemaining = (slaDeadline) => {
+  if (!slaDeadline) return 0;
+  const now = new Date();
+  const deadline = new Date(slaDeadline);
+  const diffHours = Math.floor((deadline - now) / (1000 * 60 * 60));
+  return Math.max(0, diffHours);
+};
+
 const MainPage = () => {
-  // Asigurăm inițializarea corectă a stării `tasks` ca array
   const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState('deadline');
   const [filterPriority, setFilterPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [refresh, setRefresh] = useState(0);
 
   const tasksPerPage = 5;
 
-  useEffect(() => {
-    loadTasks();
-  }, [currentPage]);
-
-  // Verificăm răspunsul de la backend înainte de a seta starea
-  const loadTasks = async () => {
-    try {
-      const data = await getTasks(currentPage, tasksPerPage);
-      setTasks(data.tasks || []); // Asigurăm că `tasks` este întotdeauna un array
-      setTotalPages(data.totalPages || 1); // Setăm un fallback pentru `totalPages`
-    } catch (err) {
-      console.error("Failed to load tasks:", err);
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks?page=${currentPage}&limit=${tasksPerPage}`);
+      const data = await response.json();
+      
+      if (Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+        setTotalPages(data.totalPages);
+      } else {
+        console.error('Received invalid tasks data:', data);
+        setTasks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [currentPage]); // Add fetchTasks to dependencies if ESLint complains
+
+  const handleTaskAdded = async () => {
+    // Păstrăm pagina curentă
+    await fetchTasks(); // Reîncărcăm taskurile pentru pagina curentă
   };
 
   const handleAddTask = async (newTask) => {
     try {
       const created = await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
-      await loadTasks(); // reîncarcă lista
+      handleTaskAdded();
       setShowAddModal(false);
     } catch (err) {
       console.error("Failed to add task:", err);
@@ -52,34 +78,65 @@ const MainPage = () => {
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
-      await loadTasks(); // reîncarcă lista
+      handleTaskAdded();
       setShowEditModal(false);
     } catch (err) {
       console.error("Failed to edit task:", err);
     }
   };
 
-  const handleDeleteTask = async (id) => {
+  const handleDeleteTask = async (taskId) => {
     try {
-      await deleteTaskById(id);
-      await loadTasks();
-    } catch (err) {
-      console.error("Failed to delete task:", err);
+      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const isLastTaskOnPage = tasks.length === 1;
+        
+        // Remove task from state
+        setTasks(tasks.filter(task => task.id !== taskId));
+
+        // If it was the last task on page and not the first page
+        if (isLastTaskOnPage && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        } else {
+          // Refresh current page
+          fetchTasks();
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
     }
   };
 
   const handleToggleComplete = async (id) => {
     try {
       await toggleTaskStatus(id);
-      await loadTasks();
+      handleTaskAdded();
     } catch (err) {
       console.error("Failed to toggle complete:", err);
     }
   };
 
+  const getSLAStatusClass = (task) => {
+    if (!task.sla?.status) return '';
+    const status = task.sla.status.toLowerCase();
+    switch (status) {
+      case 'waiting':
+        return 'sla-waiting';
+      case 'breached':
+        return 'sla-breached';
+      case 'completed':
+        return 'sla-completed';
+      default:
+        return '';
+    }
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
-    if (sortBy === 'createdAt') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'priority') {
       const order = { High: 1, Medium: 2, Low: 3 };
@@ -91,12 +148,6 @@ const MainPage = () => {
   const filteredTasks = filterPriority === 'all'
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
-
-  const handlePageChange = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
-  };
 
   return (
     <div>
@@ -129,41 +180,53 @@ const MainPage = () => {
             <p className="text-white">No tasks found for current filter.</p>
           ) : (
             filteredTasks.map(task => (
-              <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
-                <div className="w-100">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <input
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={task.completed}
-                      onChange={() => handleToggleComplete(task.id)}
-                    />
-                    <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
-                      {task.title}
-                    </h5>
+              <div key={task.id} className="card p-3 mb-3 shadow-sm">
+                <div className="d-flex justify-content-between align-items-start">
+                  <div className="w-100">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={task.completed}
+                        onChange={() => handleToggleComplete(task.id)}
+                      />
+                      <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
+                        {task.title}
+                      </h5>
+                      <span className={`sla-badge ${
+                        task.completed ? 'sla-completed' : 
+                        task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                      }`}>
+                        {task.sla?.status || 'Waiting'}
+                      </span>
+                    </div>
+                    {task.description && (
+                      <p className="text-white mb-1 ps-4 small">{task.description}</p>
+                    )}
+                    <div className="d-flex justify-content-between text-muted small">
+                      <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
+                      <span>👥 Team: {task.team_name || 'Unassigned'}</span>
+                      <span>⚡ Priority: {task.priority}</span>
+                      <span>⏰ SLA: {task.sla?.timeRemaining || 0}h remaining</span>
+                    </div>
                   </div>
-                  {task.description && (
-                    <p className="text-white mb-1 ps-4 small">{task.description}</p>
-                  )}
-                  <div className="d-flex justify-content-between text-muted small">
-                    <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
-                    <span>⏳ Deadline: {new Date(task.deadline).toLocaleDateString()}</span>
-                    <span>⚡ Priority: {task.priority}</span>
+                  <div className="d-flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setShowEditModal(true);
+                      }}
+                      className="btn btn-outline-primary btn-sm"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTask(task.id)} 
+                      className="btn btn-outline-danger btn-sm"
+                    >
+                      Delete
+                    </button>
                   </div>
-                </div>
-                <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedTask(task);
-                      setShowEditModal(true);
-                    }}
-                    className="btn btn-outline-primary btn-sm"
-                  >
-                    Edit
-                  </button>
-                  <button onClick={() => handleDeleteTask(task.id)} className="btn btn-outline-danger btn-sm">
-                    Delete
-                  </button>
                 </div>
               </div>
             ))
@@ -179,7 +242,7 @@ const MainPage = () => {
             >
               ⬅ Prev
             </button>
-            {[...Array(totalPages)].map((_, i) => (
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i + 1}
                 className={`btn btn-sm ${currentPage === i + 1 ? 'btn-light' : 'btn-outline-light'}`}
@@ -202,7 +265,7 @@ const MainPage = () => {
       <AddTaskModal
         show={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={handleAddTask}
+        onTaskAdded={handleTaskAdded}
       />
 
       <EditTaskModal
