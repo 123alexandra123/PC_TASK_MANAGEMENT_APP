@@ -17,17 +17,10 @@ const calculateSLADeadline = (priority) => {
   let hours;
 
   switch (priority) {
-    case 'High':
-      hours = 24;
-      break;
-    case 'Medium':
-      hours = 48;
-      break;
-    case 'Low':
-      hours = 72;
-      break;
-    default:
-      hours = 48;
+    case 'High': hours = 24; break;
+    case 'Medium': hours = 48; break;
+    case 'Low': hours = 72; break;
+    default: hours = 48;
   }
 
   const deadline = new Date(now.getTime() + hours * 60 * 60 * 1000);
@@ -39,49 +32,30 @@ const checkSLAStatus = (task) => {
   const now = new Date();
   const slaDeadline = new Date(task.sla_deadline);
 
-  // Add debug logging
-  console.log('SLA Check for task:', {
-    id: task.id,
-    completed: task.completed,
-    deadline: slaDeadline,
-    now: now,
-    diff: slaDeadline - now
-  });
-
   if (task.completed) {
-    return {
-      status: 'Completed',
-      timeRemaining: 0
-    };
+    return { status: 'Completed', timeRemaining: 0 };
   }
 
   const timeRemaining = Math.floor((slaDeadline - now) / (1000 * 60 * 60));
-
   if (timeRemaining > 0) {
-    return {
-      status: 'Waiting',
-      timeRemaining: timeRemaining
-    };
+    return { status: 'Waiting', timeRemaining };
   }
 
-  return {
-    status: 'Breached',
-    timeRemaining: 0
-  };
+  return { status: 'Breached', timeRemaining: 0 };
 };
 
 // Get all tasks with pagination and filtering
 router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const filter = req.query.filter || 'all'; // Adăugare parametru pentru filtrare
+    const limit = parseInt(req.query.limit) || 20; // updated to default 20
+    const filter = req.query.filter || 'all';
 
     const tasks = await getPaginatedTasks(page, limit, filter);
     const totalCount = await getTotalTaskCount(filter);
 
     res.json({
-      tasks: tasks, // Asigurare că trimitem un array de task-uri
+      tasks,
       totalCount,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit)
@@ -106,8 +80,7 @@ router.post("/", async (req, res) => {
     };
 
     const result = await createTask(taskData);
-    
-    // Return the newly created task with SLA info
+
     const newTask = {
       id: result.insertId,
       ...taskData,
@@ -133,11 +106,9 @@ router.put("/:id", async (req, res) => {
     };
 
     await updateTask(req.params.id, updatedTask);
-    
-    // Get the updated task with new SLA info
     const task = { id: req.params.id, ...updatedTask };
     const slaInfo = checkSLAStatus(task);
-    
+
     res.json({
       ...task,
       sla: {
@@ -166,7 +137,7 @@ router.patch("/:id/toggle", async (req, res) => {
   try {
     const task = await toggleTaskCompleted(req.params.id);
     const slaInfo = checkSLAStatus(task);
-    
+
     const updatedTask = {
       ...task,
       sla: {
@@ -175,7 +146,7 @@ router.patch("/:id/toggle", async (req, res) => {
         timeRemaining: slaInfo.timeRemaining
       }
     };
-    
+
     res.json(updatedTask);
   } catch (err) {
     res.status(500).json({ error: err.message });

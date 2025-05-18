@@ -4,7 +4,7 @@ const db = require('../db');
 const calculateSLADeadline = (priority) => {
   const now = new Date();
   let hours;
-  
+
   // Set SLA hours based on priority
   switch (priority) {
     case 'High': hours = 27; break;  // Strict 24 hours for High
@@ -15,7 +15,7 @@ const calculateSLADeadline = (priority) => {
 
   // Calculate SLA deadline and adjust for timezone
   const slaDeadline = new Date(now.getTime() + (hours * 60 * 60 * 1000));
-  
+
   // Format to MySQL DATETIME without timezone offset
   return slaDeadline
     .toISOString()
@@ -27,7 +27,7 @@ const calculateSLADeadline = (priority) => {
 const createTask = (taskData) => {
   return new Promise((resolve, reject) => {
     const slaDeadline = calculateSLADeadline(taskData.priority);
-    
+
     const query = `
       INSERT INTO tasks (
         title, description, priority, deadline, 
@@ -35,7 +35,7 @@ const createTask = (taskData) => {
       ) 
       VALUES (?, ?, ?, ?, NOW(), false, ?, ?)
     `;
-    
+
     const values = [
       taskData.title,
       taskData.description || null,
@@ -54,23 +54,14 @@ const createTask = (taskData) => {
 
 // update task
 const updateTask = (id, updatedTask) => {
-  console.log("Updating task with ID:", id); // Log ID-ul task-ului
-  console.log("Task data:", updatedTask); // Log datele task-ului
-
   const { title, description, deadline, priority, completed } = updatedTask;
 
   return new Promise((resolve, reject) => {
-    // Fetch the current priority from the database
     const fetchQuery = `SELECT priority FROM tasks WHERE id = ?`;
     db.query(fetchQuery, [id], (err, results) => {
-      if (err) {
-        console.error("Error fetching current priority:", err);
-        return reject(err);
-      }
+      if (err) return reject(err);
 
       const currentPriority = results[0]?.priority;
-
-      // Check if the priority has changed
       const query = `
         UPDATE tasks
         SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?
@@ -83,11 +74,7 @@ const updateTask = (id, updatedTask) => {
         : [title, description, deadline, priority, completed, id];
 
       db.query(query, values, (err, result) => {
-        if (err) {
-          console.error("Error executing query:", err);
-          return reject(err);
-        }
-        console.log("Query result:", result);
+        if (err) return reject(err);
         resolve(result);
       });
     });
@@ -107,10 +94,8 @@ const deleteTask = (id) => {
 // toggle task completion
 const toggleTaskCompleted = (id) => {
   return new Promise((resolve, reject) => {
-    const query = `
-      UPDATE tasks SET completed = NOT completed WHERE id = ?
-    `;
-    db.query(query, [id], (err, result) => {
+    const query = `UPDATE tasks SET completed = NOT completed WHERE id = ?`;
+    db.query(query, [id], (err) => {
       if (err) return reject(err);
       db.query("SELECT * FROM tasks WHERE id = ?", [id], (err, result) => {
         if (err) return reject(err);
@@ -121,10 +106,10 @@ const toggleTaskCompleted = (id) => {
 };
 
 // funcție pentru a obține task-urile paginate cu filtrare
-const getPaginatedTasks = (page, limit, filter = 'all') => {
+const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
   return new Promise((resolve, reject) => {
     const currentPage = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.max(1, parseInt(limit) || 5);
+    const limitNum = Math.max(1, parseInt(limit) || 20);
     const offset = (currentPage - 1) * limitNum;
 
     let filterCondition = '';
@@ -136,8 +121,7 @@ const getPaginatedTasks = (page, limit, filter = 'all') => {
 
     const query = `
       SELECT 
-        t.*,
-        teams.name as team_name,
+        t.*, teams.name as team_name,
         CASE 
           WHEN t.completed = 1 THEN 'Completed'
           WHEN NOW() > t.sla_deadline THEN 'Breached'
@@ -180,10 +164,7 @@ const getTotalTaskCount = (filter = 'all') => {
     const query = `SELECT COUNT(*) as count FROM tasks ${filterCondition}`;
 
     db.query(query, (err, results) => {
-      if (err) {
-        console.error('Error counting tasks:', err);
-        return reject(err);
-      }
+      if (err) return reject(err);
       resolve(results[0].count);
     });
   });

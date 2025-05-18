@@ -20,16 +20,9 @@ const LoginRegister = () => {
     const fetchTeams = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/auth/teams');
-        if (!response.ok) {
-          throw new Error('Failed to fetch teams');
-        }
+        if (!response.ok) throw new Error('Failed to fetch teams');
         const data = await response.json();
-        if (Array.isArray(data)) {
-          setTeams(data);
-        } else {
-          console.error('Unexpected response format:', data);
-          setTeams([]);
-        }
+        setTeams(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching teams:', error);
         setTeams([]);
@@ -52,12 +45,15 @@ const LoginRegister = () => {
       });
 
       const data = await response.json();
+
       if (response.ok) {
-              localStorage.setItem('token', data.token);
-              localStorage.setItem('user', JSON.stringify({
-              username: data.user.name,
-              email: data.user.email,
-              group: data.user.group
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify({
+          id: data.user.id,
+          name: data.user.name, // ✅ corect
+          email: data.user.email,
+          group: data.user.group,
+          imageUrl: data.user.imageUrl || '/uploads/default-avatar.png'
         }));
         navigate('/main');
       } else {
@@ -107,22 +103,22 @@ const LoginRegister = () => {
             <div className="input-box">
               <input
                 type="text"
-                placeholder='Email'
+                placeholder="Email"
                 required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
               />
-              <FaUser className='icon' />
+              <FaUser className="icon" />
             </div>
             <div className="input-box">
               <input
                 type="password"
-                placeholder='Password'
+                placeholder="Password"
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
               />
-              <FaLock className='icon' />
+              <FaLock className="icon" />
             </div>
             <div className="remember-forgot">
               <label><input type="checkbox" /> Remember me</label>
@@ -142,32 +138,32 @@ const LoginRegister = () => {
             <div className="input-box">
               <input
                 type="text"
-                placeholder='Username'
+                placeholder="Username"
                 required
                 value={registerName}
                 onChange={(e) => setRegisterName(e.target.value)}
               />
-              <FaUser className='icon' />
+              <FaUser className="icon" />
             </div>
             <div className="input-box">
               <input
                 type="email"
-                placeholder='Email'
+                placeholder="Email"
                 required
                 value={registerEmail}
                 onChange={(e) => setRegisterEmail(e.target.value)}
               />
-              <FaEnvelope className='icon' />
+              <FaEnvelope className="icon" />
             </div>
             <div className="input-box">
               <input
                 type="password"
-                placeholder='Password'
+                placeholder="Password"
                 required
                 value={registerPassword}
                 onChange={(e) => setRegisterPassword(e.target.value)}
               />
-              <FaLock className='icon' />
+              <FaLock className="icon" />
             </div>
             <div className="input-box">
               <select

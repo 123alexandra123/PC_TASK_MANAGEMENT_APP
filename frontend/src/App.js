@@ -11,7 +11,7 @@ import Profile from './Components/Profile/Profile';
 
 function ProtectedRoute({ children }) {
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem('token');
+  const isAuthenticated = !!sessionStorage.getItem('token');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -24,7 +24,7 @@ function ProtectedRoute({ children }) {
 
 function PublicRoute({ children }) {
   const navigate = useNavigate();
-  const isAuthenticated = !!localStorage.getItem('token');
+  const isAuthenticated = !!sessionStorage.getItem('token');
 
   useEffect(() => {
     if (isAuthenticated) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import AddTaskModal from '../AddTaskModal/AddTaskModal';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
@@ -28,13 +28,16 @@ const MainPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [refresh, setRefresh] = useState(0);
 
-  const tasksPerPage = 5;
+  const tasksPerPage = 20;
+  const tableContainerRef = useRef(null);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
+      if (tableContainerRef.current) {
+        tableContainerRef.current.scrollTop = 0;
+      }
     }
   };
 
@@ -42,7 +45,7 @@ const MainPage = () => {
     try {
       const response = await fetch(`http://localhost:5000/api/tasks?page=${currentPage}&limit=${tasksPerPage}`);
       const data = await response.json();
-      
+
       if (Array.isArray(data.tasks)) {
         setTasks(data.tasks);
         setTotalPages(data.totalPages);
@@ -58,11 +61,10 @@ const MainPage = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [currentPage]); // Add fetchTasks to dependencies if ESLint complains
+  }, [currentPage]);
 
   const handleTaskAdded = async () => {
-    // Păstrăm pagina curentă
-    await fetchTasks(); // Reîncărcăm taskurile pentru pagina curentă
+    await fetchTasks();
   };
 
   const handleAddTask = async (newTask) => {
@@ -93,15 +95,10 @@ const MainPage = () => {
 
       if (response.ok) {
         const isLastTaskOnPage = tasks.length === 1;
-        
-        // Remove task from state
         setTasks(tasks.filter(task => task.id !== taskId));
-
-        // If it was the last task on page and not the first page
         if (isLastTaskOnPage && currentPage > 1) {
           setCurrentPage(prev => prev - 1);
         } else {
-          // Refresh current page
           fetchTasks();
         }
       }
@@ -116,21 +113,6 @@ const MainPage = () => {
       handleTaskAdded();
     } catch (err) {
       console.error("Failed to toggle complete:", err);
-    }
-  };
-
-  const getSLAStatusClass = (task) => {
-    if (!task.sla?.status) return '';
-    const status = task.sla.status.toLowerCase();
-    switch (status) {
-      case 'waiting':
-        return 'sla-waiting';
-      case 'breached':
-        return 'sla-breached';
-      case 'completed':
-        return 'sla-completed';
-      default:
-        return '';
     }
   };
 
@@ -175,62 +157,80 @@ const MainPage = () => {
           </select>
         </div>
 
-        <div className="task-list">
-          {filteredTasks.length === 0 ? (
-            <p className="text-white">No tasks found for current filter.</p>
-          ) : (
-            filteredTasks.map(task => (
-              <div key={task.id} className="card p-3 mb-3 shadow-sm">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div className="w-100">
-                    <div className="d-flex align-items-center gap-2 mb-2">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={task.completed}
-                        onChange={() => handleToggleComplete(task.id)}
-                      />
-                      <h5 className={`mb-0 ${task.completed ? 'completed-task-title' : ''}`}>
-                        {task.title}
-                      </h5>
-                      <span className={`sla-badge ${
-                        task.completed ? 'sla-completed' : 
-                        task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
-                      }`}>
-                        {task.sla?.status || 'Waiting'}
-                      </span>
-                    </div>
-                    {task.description && (
-                      <p className="text-white mb-1 ps-4 small">{task.description}</p>
-                    )}
-                    <div className="d-flex justify-content-between text-muted small">
-                      <span>📅 Created: {new Date(task.created_at).toLocaleDateString()}</span>
-                      <span>👥 Team: {task.team_name || 'Unassigned'}</span>
-                      <span>⚡ Priority: {task.priority}</span>
-                      <span>⏰ SLA: {task.sla?.timeRemaining || 0}h remaining</span>
-                    </div>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setShowEditModal(true);
-                      }}
-                      className="btn btn-outline-primary btn-sm"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteTask(task.id)} 
-                      className="btn btn-outline-danger btn-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+        <div className="task-table-wrapper">
+          <div
+            ref={tableContainerRef}
+            className="table-responsive"
+            style={{ maxHeight: '400px', overflowY: 'auto' }}
+          >
+            <table className="table table-dark table-bordered table-hover align-middle text-white">
+              <thead style={{ position: 'sticky', top: 0, backgroundColor: '#1f1f1f', zIndex: 2 }}>
+                <tr>
+                  <th>✔</th>
+                  <th>Title & SLA</th>
+                  <th>Description</th>
+                  <th>Created</th>
+                  <th>Team</th>
+                  <th>Priority</th>
+                  <th>SLA Time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="text-center text-white">No tasks found for current filter.</td>
+                  </tr>
+                ) : (
+                  filteredTasks.map(task => (
+                    <tr key={task.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={task.completed}
+                          onChange={() => handleToggleComplete(task.id)}
+                        />
+                      </td>
+                      <td>
+                        <div className={`fw-bold ${task.completed ? 'completed-task-title' : ''}`}>{task.title}</div>
+                        <span className={`sla-badge ${
+                          task.completed ? 'sla-completed' :
+                          task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                        }`}>
+                          {task.sla?.status || 'Waiting'}
+                        </span>
+                      </td>
+                      <td className="small">{task.description}</td>
+                      <td>{new Date(task.created_at).toLocaleDateString()}</td>
+                      <td>{task.team_name || 'Unassigned'}</td>
+                      <td>{task.priority}</td>
+                      <td>{task.sla?.timeRemaining || 0}h</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setShowEditModal(true);
+                            }}
+                            className="btn btn-outline-primary btn-sm"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTask(task.id)} 
+                            className="btn btn-outline-danger btn-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {totalPages > 1 && (

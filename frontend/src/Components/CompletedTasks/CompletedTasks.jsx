@@ -1,26 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
-import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService'; // Importăm funcțiile pentru a obține și șterge task-urile
+import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService';
 import './CompletedTasks.css';
 
 const CompletedTasks = () => {
-  // Asigurăm inițializarea corectă a stării `tasksState` ca array
-  const [tasksState, setTasksState] = useState([]); // Stocăm task-urile completate
-
-  // Paginare
+  const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const tasksPerPage = 5;
+  const tasksPerPage = 20;
+  const tableRef = useRef(null);
 
-  // Încarcă task-urile completate de la backend
   useEffect(() => {
     loadTasks();
+    if (tableRef.current) {
+      tableRef.current.scrollTop = 0;
+    }
   }, [currentPage]);
 
-  // Pass the `filter` parameter as 'completed' when fetching tasks
   const loadTasks = async () => {
     try {
-      const data = await getTasks(currentPage, tasksPerPage, 'completed'); // Fetch only completed tasks
+      const data = await getTasks(currentPage, tasksPerPage, 'completed');
       setTasksState(data.tasks || []);
       setTotalPages(data.totalPages || 1);
     } catch (err) {
@@ -30,19 +29,19 @@ const CompletedTasks = () => {
 
   const handleDeleteTask = async (id) => {
     try {
-      await deleteTaskById(id); // Ștergem task-ul de la backend
-      await loadTasks(); // Reîncarcă lista de task-uri după ștergere
+      await deleteTaskById(id);
+      await loadTasks();
     } catch (err) {
-      console.error("Failed to delete task:", err); // Dacă se întâmplă o eroare la ștergere
+      console.error("Failed to delete task:", err);
     }
   };
 
   const handleToggleComplete = async (id) => {
     try {
-      await toggleTaskStatus(id); // Schimbăm statusul unui task la backend
-      await loadTasks(); // Reîncarcă lista după ce s-a schimbat statusul task-ului
+      await toggleTaskStatus(id);
+      await loadTasks();
     } catch (err) {
-      console.error("Failed to toggle complete:", err); // Dacă se întâmplă o eroare
+      console.error("Failed to toggle complete:", err);
     }
   };
 
@@ -55,48 +54,65 @@ const CompletedTasks = () => {
   return (
     <div>
       <Navbar />
-      <div className="main-content container task-list">
+      <div className="main-content container mt-4">
         <h2 className="fw-bold text-white mb-4">✅ Completed Tasks</h2>
-        {tasksState.length === 0 ? (
-          <p className="text-white">No completed tasks yet.</p>
-        ) : (
-          tasksState.map(task => (
-            <div key={task.id} className="card p-3 mb-3 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
-              <div className="w-100">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    checked={task.completed}
-                    onChange={() => handleToggleComplete(task.id)} // Schimbăm statusul unui task la backend
-                  />
-                  <div>
-                    <h5 className="mb-1 completed-task-title">{task.title}</h5>
-                    <p className="text-white mb-0 small">
-                      {task.description || <i>No description provided</i>}
-                    </p>
-                  </div>
-                </div>
-                <div className="d-flex justify-content-between text-muted small">
-                  <span>📅 Created: {task.createdAt}</span>
-                  <span>⏳ Deadline: {task.deadline}</span>
-                  <span>⚡ Priority: {task.priority}</span>
-                </div>
-              </div>
+        <div className="table-responsive task-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }} ref={tableRef}>
+          <table className="table table-dark table-bordered table-hover align-middle text-white">
+            <thead style={{ position: 'sticky', top: 0, backgroundColor: '#1f1f1f', zIndex: 2 }}>
+              <tr>
+                <th>✔</th>
+                <th>Title & SLA</th>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Priority</th>
+                <th>SLA Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasksState.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center text-white">No completed tasks found.</td>
+                </tr>
+              ) : (
+                tasksState.map(task => (
+                  <tr key={task.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={task.completed}
+                        onChange={() => handleToggleComplete(task.id)}
+                      />
+                    </td>
+                    <td>
+                      <div className="fw-bold completed-task-title">{task.title}</div>
+                      <span className={`sla-badge ${
+                        task.completed ? 'sla-completed' :
+                        task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                      }`}>
+                        {task.sla?.status || 'Waiting'}
+                      </span>
+                    </td>
+                    <td className="small">{task.description}</td>
+                    <td>{new Date(task.created_at).toLocaleDateString()}</td>
+                    <td>{task.priority}</td>
+                    <td>{task.sla?.timeRemaining || 0}h</td>
+                    <td>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="btn btn-outline-danger btn-sm"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-              <div className="d-flex mt-3 mt-md-0 ms-md-3 gap-2">
-                <button
-                  onClick={() => handleDeleteTask(task.id)} // Ștergem task-ul
-                  className="btn btn-outline-danger btn-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="d-flex justify-content-center mt-4 gap-2">
             <button
@@ -106,7 +122,7 @@ const CompletedTasks = () => {
             >
               ⬅ Prev
             </button>
-            {[...Array(totalPages)].map((_, i) => (
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i + 1}
                 className={`btn btn-sm ${currentPage === i + 1 ? 'btn-light' : 'btn-outline-light'}`}

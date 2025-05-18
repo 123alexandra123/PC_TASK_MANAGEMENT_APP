@@ -1,72 +1,106 @@
 body {
-    background-color: #121212;
-    color: #ffffff;
-  }
-  
-  .main-content {
-    padding: 2rem;
-    background-color: #121212;
-    min-height: 100vh;
-    padding-top: 120px;
-    
-  }
+  background-color: #121212;
+  color: #ffffff;
+}
 
+.main-content {
+  padding: 2rem;
+  background-color: #121212;
+  min-height: 100vh;
+  padding-top: 120px;
+}
 
-  
-  .task-list .card {
-    background-color: #1f1f1f;
-    border-radius: 12px;
-    border: none;
-    color: #9731db;
-  
-  }
-  
-  .task-list .card h5 {
-    font-weight: 600;
-    color: #9731db;
-  }
-  
-  .task-list .card span {
-    color: #ffffff;
-  }
-  
-  .form-select {
-    background-color: #1f1f1f;
-    color: #ffffff;
-    border: 1px solid #333;
-    width: 300px;
-  }
-  
-  .btn-success {
-    background-color: #9731db;
-    border: none;
-    color: #000;
-    font-weight: 600;
-  }
-  
-  .btn-outline-danger {
-    border-color: #f36666;
-    color:#f36666;
-  }
-  
-  .btn-outline-danger:hover {
-    background-color: #900e0e;
-    color: #fff;
-  }
-  
-  .btn-outline-primary {
-    border-color: #2347d6;
-    color: #2347d6;
-  }
-  
-  .btn-outline-primary:hover {
-    background-color: #4cc2ff;
-    color: #000;
-  }
-  
-  .completed-task-title {
-    text-decoration: line-through;
-    color: #57f0a992 !important;
-    font-weight: 600;
-  }
-  
+.table {
+  background-color: #1f1f1f;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.table thead th {
+  background-color: #9731db;
+  color: #000;
+  font-weight: bold;
+  border-bottom: 2px solid #9731db;
+  text-align: center;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #2a2a2a;
+}
+
+.form-select {
+  background-color: #1f1f1f;
+  color: #ffffff;
+  border: 1px solid #333;
+  width: 300px;
+}
+
+.table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.btn-success {
+  background-color: #9731db;
+  border: none;
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-outline-danger {
+  border-color: #f36666;
+  color: #f36666;
+}
+
+.btn-outline-danger:hover {
+  background-color: #900e0e;
+  color: #fff;
+}
+
+.btn-outline-primary {
+  border-color: #2347d6;
+  color: #2347d6;
+}
+
+.btn-outline-primary:hover {
+  background-color: #4cc2ff;
+  color: #000;
+}
+
+.completed-task-title {
+  text-decoration: line-through;
+  color: #57f0a9 !important;
+  font-weight: 600;
+}
+
+.sla-badge {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: white;
+}
+
+.sla-waiting {
+  background-color: #ffeb3b;
+  color: #000;
+}
+
+.sla-breached {
+  background-color: #f44336;
+}
+
+.sla-completed {
+  background-color: #8bc34a;
+}
+
+.table td .btn {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
