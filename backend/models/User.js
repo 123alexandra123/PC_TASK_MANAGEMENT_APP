@@ -1,6 +1,5 @@
 const db = require("../db");
 
-// funcție pentru a crea un utilizator nou în baza de date
 const createUser = (name, email, role, passwordHash, group, profileImage = null) => {
   return new Promise((resolve, reject) => {
     const query = "INSERT INTO users (name, email, role, password_hash, `group`, profile_image) VALUES (?, ?, ?, ?, ?, ?)";
@@ -11,7 +10,6 @@ const createUser = (name, email, role, passwordHash, group, profileImage = null)
   });
 };
 
-// funcție pentru a găsi un utilizator în baza de date după email
 const findUserByEmail = (email) => {
   return new Promise((resolve, reject) => {
     const query = "SELECT * FROM users WHERE email = ?";
@@ -22,7 +20,6 @@ const findUserByEmail = (email) => {
   });
 };
 
-// funcție pentru a găsi un utilizator după ID
 const findUserById = (id) => {
   return new Promise((resolve, reject) => {
     const query = "SELECT * FROM users WHERE id = ?";
@@ -33,11 +30,20 @@ const findUserById = (id) => {
   });
 };
 
-// funcție pentru a actualiza imaginea de profil
 const updateProfileImage = (userId, imageUrl) => {
   return new Promise((resolve, reject) => {
     const query = "UPDATE users SET profile_image = ? WHERE id = ?";
     db.query(query, [imageUrl, userId], (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+};
+
+const getAllUsers = () => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT id, name, email, `group` FROM users";
+    db.query(query, (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });
@@ -49,4 +55,5 @@ module.exports = {
   findUserByEmail,
   findUserById,
   updateProfileImage,
+  getAllUsers, // ✅ adăugat aici
 };

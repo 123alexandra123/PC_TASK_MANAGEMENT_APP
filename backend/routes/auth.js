@@ -1,17 +1,15 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { createUser, findUserByEmail } = require("../models/User");
+const { createUser, findUserByEmail, getAllUsers } = require("../models/User");
 const { getAllTeams } = require("../models/Team");
 
 const router = express.Router();
 
-// Test conexiune API
 router.get("/", (req, res) => {
   res.send("Auth API funcționează!");
 });
 
-// Obține toate echipele
 router.get("/teams", async (req, res) => {
   try {
     const teams = await getAllTeams();
@@ -21,7 +19,6 @@ router.get("/teams", async (req, res) => {
   }
 });
 
-// ✅ Înregistrare utilizator cu imagine default
 router.post("/register", async (req, res) => {
   try {
     const { name, email, role, password, group } = req.body;
@@ -32,18 +29,15 @@ router.post("/register", async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
-
     const defaultImage = "/uploads/default-avatar.png";
 
     await createUser(name, email, role || "user", passwordHash, group, defaultImage);
-
     res.status(201).json({ message: "Utilizator înregistrat!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Login utilizator
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -68,13 +62,22 @@ router.post("/login", async (req, res) => {
       token,
       user: {
         id: user.id,
-        name: user.name, // ✅ numele corect pentru frontend
+        name: user.name,
         email: user.email,
         role: user.role,
         group: user.group,
-        imageUrl: user.profile_image || null
+        imageUrl: user.profile_image || null,
       },
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await getAllUsers(); // ✅ funcția este acum corect importată și definită
+    res.json(users);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
