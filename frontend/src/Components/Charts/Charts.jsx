@@ -35,6 +35,7 @@ const Charts = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
 
   const fetchTasks = async () => {
     try {
@@ -67,14 +68,16 @@ const Charts = () => {
 
   const filteredTasks = tasks.filter(task => {
     const matchesPriority = selectedPriority === 'All' || task.priority === selectedPriority;
+    const matchesDepartment = selectedDepartment === 'All' || task.team_name === selectedDepartment;
     const taskDate = new Date(task.created_at).toISOString().split('T')[0];
     const matchesDate = (!startDate || taskDate >= startDate) &&
                         (!endDate || taskDate <= endDate);
-    return matchesPriority && matchesDate;
+    return matchesPriority && matchesDate && matchesDepartment;
   });
 
   const handleClearFilters = () => {
     setSelectedPriority('All');
+    setSelectedDepartment('All');
     setStartDate('');
     setEndDate('');
   };
@@ -172,6 +175,28 @@ const Charts = () => {
                   <button className={`btn ${selectedPriority === 'All' ? 'btn-light' : 'btn-outline-light'}`} onClick={() => setSelectedPriority('All')}>All</button>
                   {priorityLabels.map(priority => (
                     <button key={priority} className={`btn ${selectedPriority === priority ? 'btn-light' : 'btn-outline-light'}`} onClick={() => setSelectedPriority(priority)}>{priority}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Department Filter */}
+              <div className="col-12">
+                <h5 className="mb-2">Filter by Department</h5>
+                <div className="d-flex gap-2">
+                  <button 
+                    className={`btn ${selectedDepartment === 'All' ? 'btn-light' : 'btn-outline-light'}`}
+                    onClick={() => setSelectedDepartment('All')}
+                  >
+                    All
+                  </button>
+                  {[...new Set(tasks.map(task => task.team_name))].map(department => (
+                    <button
+                      key={department}
+                      className={`btn ${selectedDepartment === department ? 'btn-light' : 'btn-outline-light'}`}
+                      onClick={() => setSelectedDepartment(department)}
+                    >
+                      {department}
+                    </button>
                   ))}
                 </div>
               </div>
