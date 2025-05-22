@@ -1,0 +1,96 @@
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background: #2c2c2c;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  color: white;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.popup-body {
+  padding: 1rem;
+  overflow-y: auto;
+  max-height: calc(80vh - 70px);
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-item {
+  background: #383838;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.task-item h5 {
+  margin: 0 0 0.5rem 0;
+}
+
+.description {
+  color: #aaa;
+  margin-bottom: 0.5rem;
+}
+
+.task-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.priority {
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.priority.high {
+  background: #dc3545;
+}
+
+.priority.medium {
+  background: #ffc107;
+  color: #000;
+}
+
+.priority.low {
+  background: #198754;
+}
+
+.team {
+  color: #0dcaf0;
+}
+
+.date {
+  color: #6c757d;
+}

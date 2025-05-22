@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import * as XLSX from 'xlsx';
 import './Charts.css';
+import TaskPopup from '../TaskPopup/TaskPopup';
 
 ChartJS.register(
   CategoryScale,
@@ -36,6 +37,11 @@ const Charts = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
+
+  // New state variables for popup
+  const [popupTasks, setPopupTasks] = useState([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupTitle, setPopupTitle] = useState('');
 
   const fetchTasks = async () => {
     try {
@@ -149,6 +155,102 @@ const Charts = () => {
     '#8bc34a', '#ffc107', '#e91e63', '#795548'
   ];
 
+  // New handler function for chart double-click
+  const handleChartDoubleClick = (element, chartType) => {
+    if (!element.length) return;
+    
+    const index = element[0].index;
+    let tasks = [];
+    let title = '';
+
+    switch (chartType) {
+      case 'priority':
+        const priority = priorityLabels[index];
+        tasks = filteredTasks.filter(task => task.priority === priority);
+        title = `${priority} Priority Tasks`;
+        break;
+      case 'status':
+        // Fix the completed/pending logic
+        const status = ['Completed', 'Pending'][index];
+        tasks = filteredTasks.filter(task => 
+          status === 'Completed' ? task.completed : !task.completed
+        );
+        title = `${status} Tasks`;
+        break;
+      case 'sla':
+        const slaTypes = ['Waiting', 'Breached', 'Completed'];
+        const slaType = slaTypes[index];
+        tasks = filteredTasks.filter(task => {
+          if (slaType === 'Completed') return task.completed;
+          if (slaType === 'Breached') return !task.completed && new Date(task.sla_deadline) <= new Date();
+          return !task.completed && new Date(task.sla_deadline) > new Date();
+        });
+        title = `${slaType} SLA Tasks`;
+        break;
+      case 'team':
+        const team = teamLabels[index];
+        tasks = filteredTasks.filter(task => task.team_name === team);
+        title = `Tasks for ${team}`;
+        break;
+    }
+
+    setPopupTasks(tasks);
+    setPopupTitle(title);
+    setShowPopup(true);
+  };
+
+  // Update getChartOptions function
+  const getChartOptions = (chartType) => {
+    const baseOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false },
+      },
+      scales: {
+        y: { ticks: { color: '#ccc', precision: 0 } },
+        x: { ticks: { color: '#ccc' } }
+      }
+    };
+
+    // Only add click handlers for specific charts
+    if (['priority', 'status', 'sla', 'team'].includes(chartType)) {
+      return {
+        ...baseOptions,
+        onClick: (event, elements) => handleChartDoubleClick(elements, chartType)
+      };
+    }
+
+    return baseOptions;
+  };
+
+  const chartOptions = {
+    bar: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false }
+      },
+      scales: {
+        y: { 
+          ticks: { color: '#ccc', precision: 0 },
+          beginAtZero: true
+        },
+        x: { ticks: { color: '#ccc' } }
+      }
+    },
+    doughnut: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          position: 'bottom',
+          labels: { color: '#fff' }
+        }
+      }
+    }
+  };
+
   return (
     <div>
       <Navbar />
@@ -223,85 +325,76 @@ const Charts = () => {
         <div className="row g-4">
           {/* Tasks by Priority */}
           <div className="col-md-6">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="priority">
               <h5 className="text-white text-center mb-3">Tasks by Priority</h5>
-              <Bar data={{
-                labels: priorityLabels,
-                datasets: [{ label: 'Number of Tasks', data: priorityCounts, backgroundColor: barColors.slice(0, 3) }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { ticks: { color: '#ccc', precision: 0 } },
-                  x: { ticks: { color: '#ccc' } }
-                }
-              }} />
+              <Bar 
+                data={{
+                  labels: priorityLabels,
+                  datasets: [{ label: 'Number of Tasks', data: priorityCounts, backgroundColor: barColors.slice(0, 3) }]
+                }}
+                options={{
+                  ...chartOptions.bar,
+                  ...getChartOptions('priority')
+                }}
+              />
             </div>
           </div>
 
           {/* Completed vs Pending */}
           <div className="col-md-6">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="status">
               <h5 className="text-white text-center mb-3">Completed vs Pending</h5>
-              <Doughnut data={{
-                labels: ['Completed', 'Pending'],
-                datasets: [{ data: [completedCount, pendingCount], backgroundColor: ['#4caf50', '#f44336'] }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'bottom', labels: { color: '#fff' } }
-                }
-              }} />
+              <Doughnut 
+                data={{
+                  labels: ['Completed', 'Pending'],
+                  datasets: [{ data: [completedCount, pendingCount], backgroundColor: ['#4caf50', '#f44336'] }]
+                }}
+                options={{
+                  ...chartOptions.doughnut,
+                  ...getChartOptions('status')
+                }}
+              />
             </div>
           </div>
 
           {/* SLA Status */}
           <div className="col-md-6">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="sla">
               <h5 className="text-white text-center mb-3">SLA Status Distribution</h5>
-              <Doughnut data={{
-                labels: ['Waiting', 'Breached', 'Completed'],
-                datasets: [{
-                  data: [slaStatusCounts.waiting, slaStatusCounts.breached, slaStatusCounts.completed],
-                  backgroundColor: ['#ffc107', '#f44336', '#4caf50']
-                }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'bottom', labels: { color: '#fff' } },
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => `${context.label}: ${context.raw} tasks`
-                    }
-                  }
-                }
-              }} />
+              <Doughnut 
+                data={{
+                  labels: ['Waiting', 'Breached', 'Completed'],
+                  datasets: [{
+                    data: [slaStatusCounts.waiting, slaStatusCounts.breached, slaStatusCounts.completed],
+                    backgroundColor: ['#ffc107', '#f44336', '#4caf50']
+                  }]
+                }}
+                options={{
+                  ...chartOptions.doughnut,
+                  ...getChartOptions('sla')
+                }}
+              />
             </div>
           </div>
 
           {/* Tasks by Team */}
           <div className="col-md-6">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="team">
               <h5 className="text-white text-center mb-3">Tasks by Team</h5>
-              <Bar data={{
-                labels: teamLabels,
-                datasets: [{
-                  label: 'Number of Tasks',
-                  data: teamCounts,
-                  backgroundColor: barColors
-                }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { ticks: { color: '#ccc', precision: 0 } },
-                  x: { ticks: { color: '#ccc' } }
-                }
-              }} />
+              <Bar 
+                data={{
+                  labels: teamLabels,
+                  datasets: [{
+                    label: 'Number of Tasks',
+                    data: teamCounts,
+                    backgroundColor: barColors
+                  }]
+                }}
+                options={{
+                  ...chartOptions.bar,
+                  ...getChartOptions('team')
+                }}
+              />
             </div>
           </div>
 
@@ -309,33 +402,36 @@ const Charts = () => {
           <div className="col-md-12">
             <div className="chart-card">
               <h5 className="text-white text-center mb-3">Users per Team</h5>
-              <Bar data={{
-                labels: userTeamLabels,
-                datasets: [{
-                  label: 'Users per Team',
-                  data: userTeamCounts,
-                  backgroundColor: barColors
-                }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (context) => {
-                        const team = context.label;
-                        const users = teamUserMap[team]?.join(', ') || 'No users';
-                        return `Users: ${users}`;
+              <Bar 
+                data={{
+                  labels: userTeamLabels,
+                  datasets: [{
+                    label: 'Users per Team',
+                    data: userTeamCounts,
+                    backgroundColor: barColors
+                  }]
+                }} 
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          const team = context.label;
+                          const users = teamUserMap[team]?.join(', ') || 'No users';
+                          return `Users: ${users}`;
+                        }
                       }
                     }
+                  },
+                  scales: {
+                    y: { ticks: { color: '#ccc', precision: 0 } },
+                    x: { ticks: { color: '#ccc' } }
                   }
-                },
-                scales: {
-                  y: { ticks: { color: '#ccc', precision: 0 } },
-                  x: { ticks: { color: '#ccc' } }
-                }
-              }} />
+                }} 
+              />
             </div>
           </div>
 
@@ -343,28 +439,41 @@ const Charts = () => {
           <div className="col-md-12">
             <div className="chart-card">
               <h5 className="text-white text-center mb-3">Tasks Created Over Time</h5>
-              <Line data={{
-                labels: createdDates,
-                datasets: [{
-                  label: 'Tasks Created',
-                  data: tasksPerDay,
-                  borderColor: 'rgb(0, 183, 255)',
-                  backgroundColor: 'rgb(0, 183, 255)',
-                  tension: 0.3
-                }]
-              }} options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#fff' } } },
-                scales: {
-                  x: { ticks: { color: '#ccc' } },
-                  y: { ticks: { color: '#ccc', precision: 0 } }
-                }
-              }} />
+              <Line 
+                data={{
+                  labels: createdDates,
+                  datasets: [{
+                    label: 'Tasks Created',
+                    data: tasksPerDay,
+                    borderColor: 'rgb(0, 183, 255)',
+                    backgroundColor: 'rgb(0, 183, 255)',
+                    tension: 0.3
+                  }]
+                }} 
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { 
+                    legend: { labels: { color: '#fff' } } 
+                  },
+                  scales: {
+                    x: { ticks: { color: '#ccc' } },
+                    y: { ticks: { color: '#ccc', precision: 0 } }
+                  }
+                }} 
+              />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add the popup component here */}
+      <TaskPopup
+        show={showPopup}
+        onClose={() => setShowPopup(false)}
+        tasks={popupTasks}
+        title={popupTitle}
+      />
     </div>
   );
 };
