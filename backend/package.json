@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.15.0",
     "mongoose": "^8.13.1",
+    "multer": "^2.0.0",
     "mysql2": "^3.14.0",
     "react": "^19.1.0"
   },

@@ -20,6 +20,19 @@ canvas {
   max-height: 190px;
 }
 
+/* Remove general pointer cursor */
+.chart-card canvas {
+  cursor: default;
+}
+
+/* Add pointer cursor only for clickable charts */
+.chart-card[data-chart-type='priority'] canvas,
+.chart-card[data-chart-type='status'] canvas,
+.chart-card[data-chart-type='sla'] canvas,
+.chart-card[data-chart-type='team'] canvas {
+  cursor: pointer;
+}
+
 .priority-filter {
   margin-bottom: 2rem;
 }

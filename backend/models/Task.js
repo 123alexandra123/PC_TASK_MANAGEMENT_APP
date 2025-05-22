@@ -7,8 +7,9 @@ const calculateSLADeadline = (priority) => {
 
   // Set SLA hours based on priority
   switch (priority) {
-    case 'High': hours = 27; break;  // Strict 24 hours for High
-    case 'Medium': hours = 51; break;
+    case 'Critical': hours = 12; break; // Most urgent - 12 hours
+    case 'High': hours = 27; break;     // 24 hours for High
+    case 'Medium': hours = 51; break;    
     case 'Low': hours = 75; break;
     default: hours = 48;
   }
@@ -16,7 +17,6 @@ const calculateSLADeadline = (priority) => {
   // Calculate SLA deadline and adjust for timezone
   const slaDeadline = new Date(now.getTime() + (hours * 60 * 60 * 1000));
 
-  // Format to MySQL DATETIME without timezone offset
   return slaDeadline
     .toISOString()
     .slice(0, 19)
