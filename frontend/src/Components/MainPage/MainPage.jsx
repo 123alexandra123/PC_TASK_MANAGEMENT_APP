@@ -203,7 +203,7 @@ const MainPage = () => {
                       </td>
                       <td className="small">{task.description}</td>
                       <td>{new Date(task.created_at).toLocaleDateString()}</td>
-                      <td>{task.team_name || 'Unassigned'}</td>
+                      <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
                       <td>{task.priority}</td>
                       <td>{task.sla?.timeRemaining || 0}h</td>
                       <td>

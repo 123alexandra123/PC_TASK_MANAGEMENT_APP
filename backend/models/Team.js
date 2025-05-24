@@ -52,9 +52,24 @@ const deleteTeam = (name) => {
   });
 };
 
+// Get users by team id
+const getUsersByTeamId = (teamId) => {
+  return new Promise((resolve, reject) => {
+    db.query(
+      "SELECT id, name FROM users WHERE `group` = (SELECT name FROM teams WHERE id = ?)",
+      [teamId],
+      (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      }
+    );
+  });
+};
+
 module.exports = {
   getAllTeams,
   addTeam,
   updateTeam,
   deleteTeam,
+  getUsersByTeamId,
 };

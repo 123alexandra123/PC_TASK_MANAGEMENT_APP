@@ -76,7 +76,9 @@ router.post("/", async (req, res) => {
     const slaDeadline = calculateSLADeadline(req.body.priority);
     const taskData = {
       ...req.body,
-      sla_deadline: slaDeadline
+      sla_deadline: slaDeadline,
+      assigned_to: req.body.assigned_to, // team ID
+      user_id: req.body.user_id // user ID
     };
 
     const result = await createTask(taskData);
@@ -102,7 +104,9 @@ router.put("/:id", async (req, res) => {
   try {
     const updatedTask = {
       ...req.body,
-      sla_deadline: req.body.priority ? calculateSLADeadline(req.body.priority) : undefined
+      sla_deadline: req.body.priority ? calculateSLADeadline(req.body.priority) : undefined,
+      assigned_to: req.body.assigned_to, // team ID
+      user_id: req.body.user_id // user ID
     };
 
     await updateTask(req.params.id, updatedTask);

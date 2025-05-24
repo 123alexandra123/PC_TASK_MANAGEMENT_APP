@@ -31,9 +31,9 @@ const createTask = (taskData) => {
     const query = `
       INSERT INTO tasks (
         title, description, priority, deadline, 
-        created_at, completed, assigned_to, sla_deadline
+        created_at, completed, assigned_to, user_id, sla_deadline
       ) 
-      VALUES (?, ?, ?, ?, NOW(), false, ?, ?)
+      VALUES (?, ?, ?, ?, NOW(), false, ?, ?, ?)
     `;
 
     const values = [
@@ -41,7 +41,8 @@ const createTask = (taskData) => {
       taskData.description || null,
       taskData.priority,
       taskData.deadline,
-      parseInt(taskData.assigned_to, 10),
+      parseInt(taskData.assigned_to, 10), // team ID
+      parseInt(taskData.user_id, 10),     // user ID
       slaDeadline
     ];
 
@@ -54,7 +55,7 @@ const createTask = (taskData) => {
 
 // update task
 const updateTask = (id, updatedTask) => {
-  const { title, description, deadline, priority, completed } = updatedTask;
+  const { title, description, deadline, priority, completed, assigned_to, user_id } = updatedTask;
 
   return new Promise((resolve, reject) => {
     const fetchQuery = `SELECT priority FROM tasks WHERE id = ?`;
@@ -64,14 +65,14 @@ const updateTask = (id, updatedTask) => {
       const currentPriority = results[0]?.priority;
       const query = `
         UPDATE tasks
-        SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?
+        SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, assigned_to = ?, user_id = ?
         ${priority && priority !== currentPriority ? ', sla_deadline = ?' : ''}
         WHERE id = ?
       `;
 
       const values = priority && priority !== currentPriority
-        ? [title, description, deadline, priority, completed, calculateSLADeadline(priority), id]
-        : [title, description, deadline, priority, completed, id];
+        ? [title, description, deadline, priority, completed, assigned_to, user_id, calculateSLADeadline(priority), id]
+        : [title, description, deadline, priority, completed, assigned_to, user_id, id];
 
       db.query(query, values, (err, result) => {
         if (err) return reject(err);
@@ -121,7 +122,7 @@ const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
 
     const query = `
       SELECT 
-        t.*, teams.name as team_name,
+        t.*, teams.name as team_name, users.name as assigned_user_name,
         CASE 
           WHEN t.completed = 1 THEN 'Completed'
           WHEN NOW() > t.sla_deadline THEN 'Breached'
@@ -130,6 +131,7 @@ const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
         TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
       FROM tasks t
       LEFT JOIN teams ON t.assigned_to = teams.id
+      LEFT JOIN users ON t.user_id = users.id
       ${filterCondition}
       ORDER BY t.created_at DESC
       LIMIT ? OFFSET ?

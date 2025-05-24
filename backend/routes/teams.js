@@ -94,4 +94,15 @@ router.delete('/:name', async (req, res) => {
   }
 });
 
+// GET users by team id
+router.get('/:teamId/users', async (req, res) => {
+  try {
+    const users = await Team.getUsersByTeamId(req.params.teamId);
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users for team:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
