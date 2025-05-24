@@ -38,10 +38,11 @@ const Charts = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
 
-  // New state variables for popup
+  // Popup state
   const [popupTasks, setPopupTasks] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupTitle, setPopupTitle] = useState('');
+  const [popupType, setPopupType] = useState('tasks');
 
   const fetchTasks = async () => {
     try {
@@ -70,6 +71,7 @@ const Charts = () => {
   useEffect(() => {
     fetchTasks();
     fetchUsers();
+    // eslint-disable-next-line
   }, [startDate, endDate]);
 
   const filteredTasks = tasks.filter(task => {
@@ -96,7 +98,8 @@ const Charts = () => {
       Completed: task.completed ? 'Yes' : 'No',
       CreatedAt: new Date(task.created_at).toLocaleDateString(),
       Deadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString() : '',
-      Team: task.team_name || ''
+      Team: task.team_name || '',
+      AssignedTo: task.assigned_to_name || ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -106,6 +109,7 @@ const Charts = () => {
     XLSX.writeFile(workbook, 'task_statistics.xlsx');
   };
 
+  // --- Chart Data ---
   const priorityLabels = ['High', 'Medium', 'Low'];
   const priorityCounts = priorityLabels.map(
     priority => filteredTasks.filter(task => task.priority === priority).length
@@ -115,8 +119,8 @@ const Charts = () => {
   const pendingCount = filteredTasks.filter(task => !task.completed).length;
 
   const createdDates = [...new Set(
-    filteredTasks.map(task => new Date(task.created_at).toISOString().split('T')[0]).sort()
-  )];
+    filteredTasks.map(task => new Date(task.created_at).toISOString().split('T')[0])
+  )].sort();
 
   const tasksPerDay = createdDates.map(
     date => filteredTasks.filter(task =>
@@ -139,6 +143,7 @@ const Charts = () => {
     team => filteredTasks.filter(task => task.team_name === team).length
   );
 
+  // Users per team
   const teamUserMap = users.reduce((acc, user) => {
     if (!user.group) return acc;
     if (!acc[user.group]) acc[user.group] = [];
@@ -155,51 +160,79 @@ const Charts = () => {
     '#8bc34a', '#ffc107', '#e91e63', '#795548'
   ];
 
-  // New handler function for chart double-click
-  const handleChartDoubleClick = (element, chartType) => {
-    if (!element.length) return;
-    
-    const index = element[0].index;
+  // --- Popup logic for all charts ---
+  const handleChartDoubleClick = (elements, chartType) => {
+    if (!elements.length) return;
+    const index = elements[0].index;
     let tasks = [];
     let title = '';
+    let type = 'tasks';
 
     switch (chartType) {
       case 'priority':
-        const priority = priorityLabels[index];
-        tasks = filteredTasks.filter(task => task.priority === priority);
-        title = `${priority} Priority Tasks`;
+        {
+          const priority = priorityLabels[index];
+          tasks = filteredTasks.filter(task => task.priority === priority);
+          title = `${priority} Priority Tasks`;
+        }
         break;
       case 'status':
-        // Fix the completed/pending logic
-        const status = ['Completed', 'Pending'][index];
-        tasks = filteredTasks.filter(task => 
-          status === 'Completed' ? task.completed : !task.completed
-        );
-        title = `${status} Tasks`;
+        {
+          const status = ['Completed', 'Pending'][index];
+          tasks = filteredTasks.filter(task =>
+            status === 'Completed' ? task.completed : !task.completed
+          );
+          title = `${status} Tasks`;
+        }
         break;
       case 'sla':
-        const slaTypes = ['Waiting', 'Breached', 'Completed'];
-        const slaType = slaTypes[index];
-        tasks = filteredTasks.filter(task => {
-          if (slaType === 'Completed') return task.completed;
-          if (slaType === 'Breached') return !task.completed && new Date(task.sla_deadline) <= new Date();
-          return !task.completed && new Date(task.sla_deadline) > new Date();
-        });
-        title = `${slaType} SLA Tasks`;
+        {
+          const slaTypes = ['Waiting', 'Breached', 'Completed'];
+          const slaType = slaTypes[index];
+          tasks = filteredTasks.filter(task => {
+            if (slaType === 'Completed') return task.completed;
+            if (slaType === 'Breached') return !task.completed && new Date(task.sla_deadline) <= new Date();
+            return !task.completed && new Date(task.sla_deadline) > new Date();
+          });
+          title = `${slaType} SLA Tasks`;
+        }
         break;
       case 'team':
-        const team = teamLabels[index];
-        tasks = filteredTasks.filter(task => task.team_name === team);
-        title = `Tasks for ${team}`;
+        {
+          const team = teamLabels[index];
+          tasks = filteredTasks.filter(task => task.team_name === team);
+          title = `Tasks for ${team}`;
+        }
         break;
+      case 'userTeam':
+        {
+          const team = userTeamLabels[index];
+          const usersInTeam = users.filter(user => user.group === team);
+          tasks = usersInTeam;
+          title = `Users in ${team}`;
+          type = 'users';
+        }
+        break;
+      case 'createdDate':
+        {
+          const date = createdDates[index];
+          tasks = filteredTasks.filter(task =>
+            new Date(task.created_at).toISOString().split('T')[0] === date
+          );
+          title = `Tasks Created on ${date}`;
+        }
+        break;
+      default:
+        return;
     }
 
     setPopupTasks(tasks);
     setPopupTitle(title);
+    setPopupType(type);
     setShowPopup(true);
   };
 
-  // Update getChartOptions function
+  // Chart options with click handlers
   const getChartOptions = (chartType) => {
     const baseOptions = {
       responsive: true,
@@ -213,8 +246,7 @@ const Charts = () => {
       }
     };
 
-    // Only add click handlers for specific charts
-    if (['priority', 'status', 'sla', 'team'].includes(chartType)) {
+    if (['priority', 'status', 'sla', 'team', 'userTeam', 'createdDate'].includes(chartType)) {
       return {
         ...baseOptions,
         onClick: (event, elements) => handleChartDoubleClick(elements, chartType)
@@ -239,6 +271,7 @@ const Charts = () => {
         x: { ticks: { color: '#ccc' } }
       }
     },
+    // DO NOT add scales for doughnut!
     doughnut: {
       responsive: true,
       maintainAspectRatio: false,
@@ -281,7 +314,7 @@ const Charts = () => {
                 </div>
               </div>
 
-              {/* Add Department Filter */}
+              {/* Department Filter */}
               <div className="col-12">
                 <h5 className="mb-2">Filter by Department</h5>
                 <div className="d-flex gap-2">
@@ -400,7 +433,7 @@ const Charts = () => {
 
           {/* Users per Team */}
           <div className="col-md-12">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="userTeam">
               <h5 className="text-white text-center mb-3">Users per Team</h5>
               <Bar 
                 data={{
@@ -412,10 +445,10 @@ const Charts = () => {
                   }]
                 }} 
                 options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
+                  ...chartOptions.bar,
+                  ...getChartOptions('userTeam'),
                   plugins: {
-                    legend: { display: false },
+                    ...chartOptions.bar.plugins,
                     tooltip: {
                       callbacks: {
                         label: (context) => {
@@ -425,10 +458,6 @@ const Charts = () => {
                         }
                       }
                     }
-                  },
-                  scales: {
-                    y: { ticks: { color: '#ccc', precision: 0 } },
-                    x: { ticks: { color: '#ccc' } }
                   }
                 }} 
               />
@@ -437,7 +466,7 @@ const Charts = () => {
 
           {/* Tasks Created Over Time */}
           <div className="col-md-12">
-            <div className="chart-card">
+            <div className="chart-card" data-chart-type="createdDate">
               <h5 className="text-white text-center mb-3">Tasks Created Over Time</h5>
               <Line 
                 data={{
@@ -459,7 +488,8 @@ const Charts = () => {
                   scales: {
                     x: { ticks: { color: '#ccc' } },
                     y: { ticks: { color: '#ccc', precision: 0 } }
-                  }
+                  },
+                  onClick: (event, elements) => handleChartDoubleClick(elements, 'createdDate')
                 }} 
               />
             </div>
@@ -467,12 +497,13 @@ const Charts = () => {
         </div>
       </div>
 
-      {/* Add the popup component here */}
+      {/* Popup component */}
       <TaskPopup
         show={showPopup}
         onClose={() => setShowPopup(false)}
         tasks={popupTasks}
         title={popupTitle}
+        popupType={popupType}
       />
     </div>
   );

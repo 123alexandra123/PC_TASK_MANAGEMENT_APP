@@ -2,25 +2,33 @@ import React from 'react';
 import * as XLSX from 'xlsx';
 import './TaskPopup.css';
 
-const TaskPopup = ({ show, onClose, tasks, title }) => {
+const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
   if (!show) return null;
 
   const handleExport = () => {
-    const data = tasks.map(task => ({
-      Title: task.title,
-      Description: task.description || '',
-      Priority: task.priority,
-      Team: task.team_name || '',
-      Status: task.completed ? 'Completed' : 'Pending',
-      Created: new Date(task.created_at).toLocaleDateString(),
-      Deadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString() : ''
-    }));
+    let data;
+    if (popupType === 'users') {
+      data = tasks.map(user => ({
+        Name: user.name,
+        Email: user.email,
+        Team: user.group
+      }));
+    } else {
+      data = tasks.map(task => ({
+        Title: task.title,
+        Description: task.description || '',
+        Priority: task.priority,
+        Team: task.team_name || '',
+        AssignedTo: task.assigned_to_name || '',
+        Status: task.completed ? 'Completed' : 'Pending',
+        Created: new Date(task.created_at).toLocaleDateString(),
+        Deadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString() : ''
+      }));
+    }
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
-
-    // Generate filename based on title
+    XLSX.utils.book_append_sheet(workbook, worksheet, popupType === 'users' ? 'Users' : 'Tasks');
     const filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.xlsx`;
     XLSX.writeFile(workbook, filename);
   };
@@ -51,7 +59,17 @@ const TaskPopup = ({ show, onClose, tasks, title }) => {
         </div>
         <div className="popup-body">
           {tasks.length === 0 ? (
-            <p className="text-muted">No tasks found</p>
+            <p className="text-muted">{popupType === 'users' ? 'No users found' : 'No tasks found'}</p>
+          ) : popupType === 'users' ? (
+            <div className="user-list">
+              {tasks.map(user => (
+                <div key={user.id} className="user-item">
+                  <strong>{user.name}</strong>
+                  <div>Email: {user.email}</div>
+                  <div>Team: {user.group}</div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="task-list">
               {tasks.map(task => (
@@ -63,6 +81,7 @@ const TaskPopup = ({ show, onClose, tasks, title }) => {
                       {task.priority}
                     </span>
                     <span className="team">{task.team_name || 'Unassigned'}</span>
+                    <span className="assigned">{task.assigned_to_name ? `Assigned: ${task.assigned_to_name}` : ''}</span>
                     <span className="date">
                       Created: {new Date(task.created_at).toLocaleDateString()}
                     </span>

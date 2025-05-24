@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useEffect, useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Routes, Route, useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import CompletedTasks from './Components/CompletedTasks/CompletedTasks';
 import PendingTasks from './Components/PendingTasks/PendingTasks';
 import Charts from './Components/Charts/Charts';
 import Profile from './Components/Profile/Profile';
+import ManageTeams from './Components/ManageTeams/ManageTeams'; 
 
 function ProtectedRoute({ children }) {
   const navigate = useNavigate();
@@ -33,6 +33,23 @@ function PublicRoute({ children }) {
   }, [isAuthenticated, navigate]);
 
   return !isAuthenticated ? children : null;
+}
+
+// 🛡️ AdminRoute pentru acces doar adminilor (is_admin === '1')
+function AdminRoute({ children }) {
+  const navigate = useNavigate();
+  const isAuthenticated = !!sessionStorage.getItem('token');
+  const isAdmin = sessionStorage.getItem('is_admin') === '1';
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else if (!isAdmin) {
+      navigate('/main');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
+
+  return isAuthenticated && isAdmin ? children : null;
 }
 
 function App() {
@@ -167,6 +184,14 @@ function App() {
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage-teams"
+        element={
+          <AdminRoute>
+            <ManageTeams />
+          </AdminRoute>
         }
       />
     </Routes>

@@ -6,6 +6,8 @@ import { FaUser } from "react-icons/fa";
 import { NavLink } from 'react-router-dom';
 
 const Navbar = () => {
+  const isAdmin = sessionStorage.getItem('is_admin') === '1';
+
   return (
     <nav className="navbar navbar-expand-lg fixed-top">
       <div className="container-fluid">
@@ -68,7 +70,20 @@ const Navbar = () => {
                   Charts
                 </NavLink>
               </li>
-              {/* Adaugă mai multe pagini aici după nevoie */}
+
+              {/* ✅ Vizibil doar pentru admini */}
+              {isAdmin && (
+                <li className="nav-item">
+                  <NavLink
+                    to="/manage-teams"
+                    className={({ isActive }) =>
+                      "nav-link mx-lg-2" + (isActive ? " active" : "")
+                    }
+                  >
+                    Manage Teams
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -78,7 +93,7 @@ const Navbar = () => {
           className={({ isActive }) =>
             "nav-link profile-icon" + (isActive ? " active" : "")
           }
-          title="Profil"
+          title="Profile"
         >
           <FaUser style={{ fontSize: '1.5rem', marginLeft: '10px', color: '#000' }} />
         </NavLink>

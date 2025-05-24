@@ -35,35 +35,38 @@ const LoginRegister = () => {
   const registerLink = () => setAction(' active');
   const loginLink = () => setAction('');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword })
-      });
+const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginEmail, password: loginPassword })
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        sessionStorage.setItem('token', data.token);
-        sessionStorage.setItem('user', JSON.stringify({
-          id: data.user.id,
-          name: data.user.name, // ✅ corect
-          email: data.user.email,
-          group: data.user.group,
-          imageUrl: data.user.imageUrl || '/uploads/default-avatar.png'
-        }));
-        navigate('/main');
-      } else {
-        alert(data.message || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('Server error while logging in');
+    if (response.ok) {
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('user', JSON.stringify({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        group: data.user.group,
+        imageUrl: data.user.imageUrl || '/uploads/default-avatar.png',
+        is_admin: data.user.is_admin  // ✅ AICI salvăm flagul de admin
+      }));
+      sessionStorage.setItem('is_admin', data.user.is_admin); // ✅ extra (opțional, pentru acces rapid)
+      navigate('/main');
+    } else {
+      alert(data.message || 'Login failed');
     }
-  };
+  } catch (error) {
+    console.error('Login error:', error);
+    alert('Server error while logging in');
+  }
+};
+
 
   const handleRegister = async (e) => {
     e.preventDefault();
