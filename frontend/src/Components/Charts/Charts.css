@@ -29,6 +29,8 @@ canvas {
 .chart-card[data-chart-type='priority'] canvas,
 .chart-card[data-chart-type='status'] canvas,
 .chart-card[data-chart-type='sla'] canvas,
+.chart-card[data-chart-type='userTeam'] canvas,
+.chart-card[data-chart-type='createdDate'] canvas,
 .chart-card[data-chart-type='team'] canvas {
   cursor: pointer;
 }
@@ -85,3 +87,9 @@ canvas {
 .filters-panel .btn {
   min-width: 80px;
 }
+
+.popup-overlay{
+  padding-top: 100px;
+}
+
+

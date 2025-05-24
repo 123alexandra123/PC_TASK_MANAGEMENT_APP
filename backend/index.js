@@ -4,6 +4,7 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 
+
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -21,6 +22,7 @@ const uploadRoutes = require("./routes/upload");
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use('/api/teams', require('./routes/teams'));
 
 // Pornire server
 const PORT = process.env.PORT || 5000;

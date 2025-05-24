@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { createUser, findUserByEmail, getAllUsers } = require("../models/User");
 const { getAllTeams } = require("../models/Team");
+const db = require("../db"); 
 
 const router = express.Router();
 
@@ -67,6 +68,7 @@ router.post("/login", async (req, res) => {
         role: user.role,
         group: user.group,
         imageUrl: user.profile_image || null,
+        is_admin: user.is_admin, 
       },
     });
   } catch (err) {
@@ -76,10 +78,24 @@ router.post("/login", async (req, res) => {
 
 router.get("/users", async (req, res) => {
   try {
-    const users = await getAllUsers(); // ✅ funcția este acum corect importată și definită
+    const users = await getAllUsers();
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+//Update echipă utilizator (folosit la schimbarea din dropdown)
+router.patch("/users/:id", async (req, res) => {
+  const userId = req.params.id;
+  const { group } = req.body;
+
+  try {
+    await db.query("UPDATE users SET `group` = ? WHERE id = ?", [group, userId]);
+    res.status(200).json({ message: "Grup actualizat cu succes" });
+  } catch (err) {
+    console.error("Eroare la actualizarea grupului:", err);
+    res.status(500).json({ message: "Eroare la actualizarea utilizatorului" });
   }
 });
 
