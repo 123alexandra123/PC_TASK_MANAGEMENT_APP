@@ -1,9 +1,9 @@
 const db = require("../db");
 
-const createUser = (name, email, role, passwordHash, group, profileImage = null) => {
+const createUser = (name, email, passwordHash, group, isAdmin, profileImage = null) => {
   return new Promise((resolve, reject) => {
-    const query = "INSERT INTO users (name, email, role, password_hash, `group`, profile_image) VALUES (?, ?, ?, ?, ?, ?)";
-    db.query(query, [name, email, role, passwordHash, group, profileImage], (err, results) => {
+    const query = "INSERT INTO users (name, email, password_hash, `group`, is_admin, profile_image) VALUES (?, ?, ?, ?, ?, ?)";
+    db.query(query, [name, email, passwordHash, group, isAdmin, profileImage], (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });

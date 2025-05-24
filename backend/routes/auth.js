@@ -22,7 +22,7 @@ router.get("/teams", async (req, res) => {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, role, password, group } = req.body;
+    const { name, email, password, group } = req.body;
 
     if (!name || !email || !password || !group) {
       return res.status(400).json({ message: "Toate câmpurile sunt necesare!" });
@@ -31,8 +31,9 @@ router.post("/register", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
     const defaultImage = "/uploads/default-avatar.png";
+    const isAdmin = group.toLowerCase() === 'administrator' ? 1 : 0;
 
-    await createUser(name, email, role || "user", passwordHash, group, defaultImage);
+    await createUser(name, email, passwordHash, group, isAdmin, defaultImage);
     res.status(201).json({ message: "Utilizator înregistrat!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -57,7 +58,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Parolă incorectă!" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user.id, group: user.group }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     res.json({
       token,
@@ -65,7 +66,6 @@ router.post("/login", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
         group: user.group,
         imageUrl: user.profile_image || null,
         is_admin: user.is_admin, 
