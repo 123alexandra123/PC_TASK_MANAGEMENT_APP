@@ -8,6 +8,7 @@ import PendingTasks from './Components/PendingTasks/PendingTasks';
 import Charts from './Components/Charts/Charts';
 import Profile from './Components/Profile/Profile';
 import ManageTeams from './Components/ManageTeams/ManageTeams'; 
+import MyTasks from './Components/MyTasks/MyTasks';
 
 function ProtectedRoute({ children }) {
   const navigate = useNavigate();
@@ -193,6 +194,14 @@ function App() {
             <ManageTeams />
           </AdminRoute>
         }
+      />
+      <Route 
+        path="/my-tasks" 
+        element={
+          <ProtectedRoute>
+            <MyTasks />
+          </ProtectedRoute>
+        } 
       />
     </Routes>
   );

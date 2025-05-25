@@ -11,20 +11,12 @@ import {
 } from '../../services/taskService';
 import './MainPage.css';
 
-const calculateTimeRemaining = (slaDeadline) => {
-  if (!slaDeadline) return 0;
-  const now = new Date();
-  const deadline = new Date(slaDeadline);
-  const diffHours = Math.floor((deadline - now) / (1000 * 60 * 60));
-  return Math.max(0, diffHours);
-};
-
 const MainPage = () => {
   const [tasks, setTasks] = useState([]);
-  const [sortBy, setSortBy] = useState('deadline');
-  const [filterPriority, setFilterPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [filterPriority, setFilterPriority] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);

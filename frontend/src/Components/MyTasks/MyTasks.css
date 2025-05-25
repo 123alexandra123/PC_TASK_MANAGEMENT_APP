@@ -1,0 +1,27 @@
+.completed-task-title {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+.sla-badge {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+  display: inline-block;
+}
+
+.sla-waiting {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.sla-breached {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.sla-completed {
+  background-color: #198754;
+  color: #fff;
+}

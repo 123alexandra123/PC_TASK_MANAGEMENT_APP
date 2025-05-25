@@ -70,6 +70,16 @@ const Navbar = () => {
                   Charts
                 </NavLink>
               </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/my-tasks"
+                  className={({ isActive }) =>
+                    "nav-link mx-lg-2" + (isActive ? " active" : "")
+                  }
+                >
+                  My Tasks
+                </NavLink>
+              </li>
 
               {/* ✅ Vizibil doar pentru admini */}
               {isAdmin && (

@@ -8,6 +8,7 @@ const {
   getTotalTaskCount
 } = require("../models/Task");
 const authenticateJWT = require('./authMiddleware');
+const connection = require('../db'); // Changed from '../config/database' to '../db'
 
 const router = express.Router();
 
@@ -169,6 +170,43 @@ router.get("/count", async (req, res) => {
 // Protected route example
 router.get('/protected-route', authenticateJWT, (req, res) => {
   res.json({ message: 'This is a protected route.', user: req.user });
+});
+
+router.get("/my-tasks/:userId", (req, res) => {
+  const userId = req.params.userId;
+  const query = `
+    SELECT 
+      t.*, 
+      teams.name as team_name,
+      CASE 
+        WHEN t.completed = 1 THEN 'Completed'
+        WHEN NOW() > t.sla_deadline THEN 'Breached'
+        ELSE 'Waiting'
+      END as sla_status,
+      TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
+    FROM tasks t
+    LEFT JOIN teams ON t.assigned_to = teams.id
+    WHERE t.assigned_to = ? 
+       OR t.assigned_to IN (SELECT team_id FROM user_teams WHERE user_id = ?)
+    ORDER BY t.created_at DESC
+  `;
+
+  connection.query(query, [userId, userId], (err, tasks) => {
+    if (err) {
+      console.error('Error fetching tasks:', err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    const tasksWithSla = tasks.map(task => ({
+      ...task,
+      sla: {
+        status: task.sla_status,
+        timeRemaining: Math.max(0, task.hours_remaining || 0)
+      }
+    }));
+
+    res.json(tasksWithSla);
+  });
 });
 
 module.exports = router;
