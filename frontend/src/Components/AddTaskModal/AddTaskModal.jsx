@@ -4,7 +4,7 @@ import './AddTaskModal.css';
 const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('Medium');
+  const [priority, setPriority] = useState('Medium'); // Default priority
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [users, setUsers] = useState([]);
@@ -110,8 +110,9 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
             onChange={(e) => setPriority(e.target.value)}
             className="form-select"
           >
-            <option value="High">High 🔴</option>
-            <option value="Medium">Medium 🟠</option>
+            <option value="Critical">Critical 🔴</option>
+            <option value="High">High 🟠</option>
+            <option value="Medium">Medium 🟡</option>
             <option value="Low">Low 🟢</option>
           </select>
           <select

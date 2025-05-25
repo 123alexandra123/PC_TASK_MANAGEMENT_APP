@@ -117,11 +117,10 @@ const MainPage = () => {
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
-    if (sortBy === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
     if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'priority') {
-      const order = { High: 1, Medium: 2, Low: 3 };
+      const order = { Critical: 0, High: 1, Medium: 2, Low: 3 };
       return order[a.priority] - order[b.priority];
     }
     return 0;
@@ -144,13 +143,13 @@ const MainPage = () => {
 
         <div className="d-flex gap-3 mb-4 flex-wrap">
           <select className="form-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            <option value="deadline">Sort by deadline</option>
             <option value="createdAt">Sort by creation date</option>
             <option value="priority">Sort by priority</option>
             <option value="title">Sort alphabetically</option>
           </select>
           <select className="form-select" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
             <option value="all">All priorities</option>
+            <option value="Critical">Critical</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
