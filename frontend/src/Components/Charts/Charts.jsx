@@ -110,7 +110,7 @@ const Charts = () => {
   };
 
   // --- Chart Data ---
-  const priorityLabels = ['High', 'Medium', 'Low'];
+  const priorityLabels = ['Critical', 'High', 'Medium', 'Low'];
   const priorityCounts = priorityLabels.map(
     priority => filteredTasks.filter(task => task.priority === priority).length
   );
@@ -307,9 +307,20 @@ const Charts = () => {
               <div className="col-12">
                 <h5 className="mb-2">Filter by Priority</h5>
                 <div className="d-flex gap-2">
-                  <button className={`btn ${selectedPriority === 'All' ? 'btn-light' : 'btn-outline-light'}`} onClick={() => setSelectedPriority('All')}>All</button>
+                  <button 
+                    className={`btn ${selectedPriority === 'All' ? 'btn-light' : 'btn-outline-light'}`} 
+                    onClick={() => setSelectedPriority('All')}
+                  >
+                    All
+                  </button>
                   {priorityLabels.map(priority => (
-                    <button key={priority} className={`btn ${selectedPriority === priority ? 'btn-light' : 'btn-outline-light'}`} onClick={() => setSelectedPriority(priority)}>{priority}</button>
+                    <button 
+                      key={priority} 
+                      className={`btn ${selectedPriority === priority ? 'btn-light' : 'btn-outline-light'}`} 
+                      onClick={() => setSelectedPriority(priority)}
+                    >
+                      {priority}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -363,7 +374,11 @@ const Charts = () => {
               <Bar 
                 data={{
                   labels: priorityLabels,
-                  datasets: [{ label: 'Number of Tasks', data: priorityCounts, backgroundColor: barColors.slice(0, 3) }]
+                  datasets: [{ 
+                    label: 'Number of Tasks', 
+                    data: priorityCounts, 
+                    backgroundColor: barColors.slice(0, 4) // Update to show 4 colors for Critical
+                  }]
                 }}
                 options={{
                   ...chartOptions.bar,

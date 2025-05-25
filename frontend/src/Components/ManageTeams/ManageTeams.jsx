@@ -15,6 +15,8 @@ const ManageTeams = () => {
   const [editTeamName, setEditTeamName] = useState('');
   const [editTeamDescription, setEditTeamDescription] = useState('');
   const [originalTeamName, setOriginalTeamName] = useState('');
+  const [showIncompletePopup, setShowIncompletePopup] = useState(false);
+  const [incompleteUserName, setIncompleteUserName] = useState('');
 
   useEffect(() => {
     fetchUsersAndTeams();
@@ -50,6 +52,20 @@ const ManageTeams = () => {
   };
 
   const handleTeamChange = async (userId, newTeam) => {
+    // Check for incomplete tasks before allowing team change
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/${userId}/incomplete-tasks-count`);
+      const data = await res.json();
+      if (data.count > 0) {
+        const user = users.find(u => u.id === userId);
+        setIncompleteUserName(user ? user.name : '');
+        setShowIncompletePopup(true);
+        return;
+      }
+    } catch (err) {
+      // fallback: allow change if error
+    }
+
     const updatedUsers = users.map(user =>
       user.id === userId ? { ...user, group: newTeam === 'No Team' ? null : newTeam } : user
     );
@@ -319,6 +335,18 @@ const ManageTeams = () => {
                 setEditTeamDescription('');
                 setOriginalTeamName('');
               }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {showIncompletePopup && (
+          <div className="modal-backdrop" onClick={() => setShowIncompletePopup(false)}>
+            <div className="modal-content-custom" onClick={e => e.stopPropagation()}>
+              <h5 className="mb-3">Utilizatorul nu are toate taskurile rezolvate</h5>
+              <p>{incompleteUserName && `Utilizatorul ${incompleteUserName} are taskuri nefinalizate.`}</p>
+              <button className="btn btn-secondary mt-3" onClick={() => setShowIncompletePopup(false)}>
+                OK
+              </button>
             </div>
           </div>
         )}

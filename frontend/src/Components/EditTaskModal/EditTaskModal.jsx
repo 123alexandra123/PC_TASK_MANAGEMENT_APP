@@ -6,25 +6,52 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('Medium');
     const [selectedTeam, setSelectedTeam] = useState('');
+    const [selectedUser, setSelectedUser] = useState('');
     const [teams, setTeams] = useState([]);
+    const [users, setUsers] = useState([]);
   
     useEffect(() => {
       if (task) {
         setTitle(task.title);
         setDescription(task.description || '');
         setPriority(task.priority);
-        setSelectedTeam(task.teamId || '');
+        setSelectedTeam(task.assigned_to || '');
+        setSelectedUser(task.user_id || '');
       }
     }, [task]);
   
     useEffect(() => {
-      // Fetch teams from the server or use a static list
-      setTeams([
-        { id: '1', name: 'Team Alpha' },
-        { id: '2', name: 'Team Beta' },
-        { id: '3', name: 'Team Gamma' },
-      ]);
+      // Fetch teams from backend
+      const fetchTeams = async () => {
+        try {
+          const response = await fetch('http://localhost:5000/api/auth/teams');
+          const data = await response.json();
+          setTeams(Array.isArray(data) ? data : []);
+        } catch (error) {
+          setTeams([]);
+        }
+      };
+      fetchTeams();
     }, []);
+  
+    useEffect(() => {
+      // Fetch users for selected team from backend
+      if (!selectedTeam) {
+        setUsers([]);
+        setSelectedUser('');
+        return;
+      }
+      const fetchUsers = async () => {
+        try {
+          const response = await fetch(`http://localhost:5000/api/teams/${selectedTeam}/users`);
+          const data = await response.json();
+          setUsers(Array.isArray(data) ? data : []);
+        } catch (error) {
+          setUsers([]);
+        }
+      };
+      fetchUsers();
+    }, [selectedTeam]);
   
     const handleSubmit = (e) => {
       e.preventDefault();
@@ -34,7 +61,8 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
         title,
         description,
         priority,
-        teamId: selectedTeam,
+        assigned_to: selectedTeam,
+        user_id: selectedUser,
         completed: task.completed, // Include câmpul `completed`
       });
       onClose();
@@ -83,6 +111,36 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
                   <option value="High">High 🟠</option>
                   <option value="Medium">Medium 🟡</option>
                   <option value="Low">Low 🟢</option>
+                </select>
+              </div>
+  
+              <div className="form-group mb-3">
+                <select
+                  value={selectedTeam}
+                  onChange={(e) => setSelectedTeam(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="">Select Team</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+  
+              <div className="form-group mb-3">
+                <select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="">Select User</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
                 </select>
               </div>
   

@@ -4,9 +4,11 @@ import './AddTaskModal.css';
 const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('Medium');
+  const [priority, setPriority] = useState('Medium'); // Default priority
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -22,10 +24,30 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
     fetchTeams();
   }, []);
 
+  useEffect(() => {
+    if (!selectedTeam) {
+      setUsers([]);
+      setSelectedUser('');
+      return;
+    }
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/teams/${selectedTeam}/users`);
+        const data = await response.json();
+        setUsers(data);
+        setSelectedUser('');
+      } catch (error) {
+        setUsers([]);
+        setSelectedUser('');
+      }
+    };
+    fetchUsers();
+  }, [selectedTeam]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !selectedTeam) {
-      return alert('Title and team selection are required!');
+    if (!title || !selectedTeam || !selectedUser) {
+      return alert('Title, team and user selection are required!');
     }
 
     try {
@@ -38,7 +60,8 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
           title,
           description,
           priority,
-          assigned_to: selectedTeam
+          assigned_to: selectedTeam, // team ID
+          user_id: selectedUser      // user ID
         })
       });
 
@@ -47,6 +70,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
         setDescription('');
         setPriority('Medium');
         setSelectedTeam('');
+        setSelectedUser('');
         // Call the parent's onTaskAdded callback
         onTaskAdded && onTaskAdded();
         onClose();
@@ -86,8 +110,9 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
             onChange={(e) => setPriority(e.target.value)}
             className="form-select"
           >
-            <option value="High">High 🔴</option>
-            <option value="Medium">Medium 🟠</option>
+            <option value="Critical">Critical 🔴</option>
+            <option value="High">High 🟠</option>
+            <option value="Medium">Medium 🟡</option>
             <option value="Low">Low 🟢</option>
           </select>
           <select
@@ -101,7 +126,19 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
               <option key={team.id} value={team.id}>{team.name}</option>
             ))}
           </select>
-
+          {selectedTeam && (
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="form-select"
+              required
+            >
+              <option value="">Select User</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>{user.name}</option>
+              ))}
+            </select>
+          )}
           <div className="d-flex justify-content-end gap-2 mt-3">
             <button type="button" className="btn btn-outline-light" onClick={onClose}>
               Cancel

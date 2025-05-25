@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Navbar from '../Navbar/Navbar';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
 import {
@@ -9,14 +9,6 @@ import {
 } from '../../services/taskService';
 import './PendingTasks.css';
 
-const calculateTimeRemaining = (slaDeadline) => {
-  if (!slaDeadline) return 0;
-  const now = new Date();
-  const deadline = new Date(slaDeadline);
-  const diffHours = Math.floor((deadline - now) / (1000 * 60 * 60));
-  return Math.max(0, diffHours);
-};
-
 const PendingTasks = () => {
   const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,14 +18,7 @@ const PendingTasks = () => {
   const tasksPerPage = 20;
   const tableRef = useRef(null);
 
-  useEffect(() => {
-    loadTasks();
-    if (tableRef.current) {
-      tableRef.current.scrollTop = 0;
-    }
-  }, [currentPage]);
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage, 'pending');
       setTasksState(data.tasks || []);
@@ -41,7 +26,11 @@ const PendingTasks = () => {
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }
-  };
+  }, [currentPage, tasksPerPage]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const handleDeleteTask = async (id) => {
     try {
@@ -126,7 +115,7 @@ const PendingTasks = () => {
                     </td>
                     <td className="small">{task.description}</td>
                     <td>{new Date(task.created_at).toLocaleDateString()}</td>
-                    <td>{task.team_name || 'Unassigned'}</td>
+                    <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
                     <td>{task.priority}</td>
                     <td>{task.sla?.timeRemaining || 0}h</td>
                     <td>

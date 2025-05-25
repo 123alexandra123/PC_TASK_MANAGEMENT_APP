@@ -17,12 +17,14 @@ const db = require("./db");
 const authRoutes = require("./routes/auth");
 const taskRoutes = require("./routes/tasks");
 const uploadRoutes = require("./routes/upload");
+const userTasksRouter = require('./routes/userTasks');
 
 // Rute API
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/teams', require('./routes/teams'));
+app.use('/api/users', userTasksRouter);
 
 // Pornire server
 const PORT = process.env.PORT || 5000;
