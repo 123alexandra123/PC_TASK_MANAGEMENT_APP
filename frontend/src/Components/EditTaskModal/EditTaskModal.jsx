@@ -7,8 +7,10 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
     const [priority, setPriority] = useState('Medium');
     const [selectedTeam, setSelectedTeam] = useState('');
     const [selectedUser, setSelectedUser] = useState('');
+    const [status, setStatus] = useState('in progress');
     const [teams, setTeams] = useState([]);
     const [users, setUsers] = useState([]);
+    const isAdmin = sessionStorage.getItem('is_admin') === '1';
   
     useEffect(() => {
       if (task) {
@@ -17,6 +19,7 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
         setPriority(task.priority);
         setSelectedTeam(task.assigned_to || '');
         setSelectedUser(task.user_id || '');
+        setStatus(task.status || 'in progress');
       }
     }, [task]);
   
@@ -63,7 +66,8 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
         priority,
         assigned_to: selectedTeam,
         user_id: selectedUser,
-        completed: task.completed, // Include câmpul `completed`
+        completed: task.completed,
+        status,
       });
       onClose();
     };
@@ -141,6 +145,19 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
                       {user.name}
                     </option>
                   ))}
+                </select>
+              </div>
+  
+              <div className="form-group mb-3">
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="form-select"
+                  disabled={!isAdmin && status === 'closed'}
+                >
+                  <option value="in progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  {/* Optiunea Closed nu mai este afisata */}
                 </select>
               </div>
   

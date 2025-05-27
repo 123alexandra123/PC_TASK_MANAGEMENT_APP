@@ -17,6 +17,7 @@ const PendingTasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const tasksPerPage = 20;
   const tableRef = useRef(null);
+  const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
   const loadTasks = useCallback(async () => {
     try {
@@ -43,10 +44,15 @@ const PendingTasks = () => {
 
   const handleToggleComplete = async (id) => {
     try {
-      await toggleTaskStatus(id);
+      const task = tasksState.find(t => t.id === id);
+      if (!isAdmin) {
+        alert('Doar adminul poate închide un task!');
+        return;
+      }
+      await updateTask(id, { ...task, status: 'closed', completed: true });
       await loadTasks();
     } catch (err) {
-      console.error("Failed to toggle complete:", err);
+      console.error("Failed to close task:", err);
     }
   };
 
@@ -85,13 +91,15 @@ const PendingTasks = () => {
                 <th>Team</th>
                 <th>Priority</th>
                 <th>SLA Time</th>
+                <th>Status</th>
+                <th>In SLA</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {tasksState.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center text-white">No pending tasks found.</td>
+                  <td colSpan="10" className="text-center text-white">No pending tasks found.</td>
                 </tr>
               ) : (
                 tasksState.map(task => (
@@ -114,10 +122,22 @@ const PendingTasks = () => {
                       </span>
                     </td>
                     <td className="small">{task.description}</td>
-                    <td>{new Date(task.created_at).toLocaleDateString()}</td>
+                    <td>
+                      {new Date(task.created_at).toLocaleDateString()}
+                      <br />
+                      <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                        {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
                     <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
                     <td>{task.priority}</td>
                     <td>{task.sla?.timeRemaining || 0}h</td>
+                    <td>{task.status}</td>
+                    <td>
+                      <span style={{ color: task.in_sla === 1 ? '#4caf50' : task.in_sla === 0 ? '#f44336' : '#aaa', fontWeight: 'bold' }}>
+                        {task.in_sla === null ? '-' : (task.in_sla ? 'In SLA' : 'Out of SLA')}
+                      </span>
+                    </td>
                     <td>
                       <div className="d-flex gap-2">
                         <button

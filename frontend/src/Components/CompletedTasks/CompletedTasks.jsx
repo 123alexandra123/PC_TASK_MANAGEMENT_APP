@@ -9,6 +9,7 @@ const CompletedTasks = () => {
   const [totalPages, setTotalPages] = useState(1);
   const tasksPerPage = 20;
   const tableRef = useRef(null);
+  const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
   useEffect(() => {
     loadTasks();
@@ -38,10 +39,15 @@ const CompletedTasks = () => {
 
   const handleToggleComplete = async (id) => {
     try {
+      const task = tasksState.find(t => t.id === id);
+      if (!isAdmin) {
+        alert('Doar adminul poate închide un task!');
+        return;
+      }
       await toggleTaskStatus(id);
       await loadTasks();
     } catch (err) {
-      console.error("Failed to toggle complete:", err);
+      console.error("Failed to close task:", err);
     }
   };
 
@@ -66,13 +72,15 @@ const CompletedTasks = () => {
                 <th>Created</th>
                 <th>Priority</th>
                 <th>SLA Time</th>
+                <th>Status</th>
+                <th>In SLA</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {tasksState.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center text-white">No completed tasks found.</td>
+                  <td colSpan="9" className="text-center text-white">No completed tasks found.</td>
                 </tr>
               ) : (
                 tasksState.map(task => (
@@ -95,9 +103,21 @@ const CompletedTasks = () => {
                       </span>
                     </td>
                     <td className="small">{task.description}</td>
-                    <td>{new Date(task.created_at).toLocaleDateString()}</td>
+                    <td>
+                      {new Date(task.created_at).toLocaleDateString()}
+                      <br />
+                      <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                        {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </td>
                     <td>{task.priority}</td>
                     <td>{task.sla?.timeRemaining || 0}h</td>
+                    <td>{task.status}</td>
+                    <td>
+                      <span style={{ color: task.in_sla === 1 ? '#4caf50' : task.in_sla === 0 ? '#f44336' : '#aaa', fontWeight: 'bold' }}>
+                        {task.in_sla === null ? '-' : (task.in_sla ? 'In SLA' : 'Out of SLA')}
+                      </span>
+                    </td>
                     <td>
                       <button
                         onClick={() => handleDeleteTask(task.id)}

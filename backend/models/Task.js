@@ -55,24 +55,39 @@ const createTask = (taskData) => {
 
 // update task
 const updateTask = (id, updatedTask) => {
-  const { title, description, deadline, priority, completed, assigned_to, user_id } = updatedTask;
+  const { title, description, deadline, priority, completed, assigned_to, user_id, status } = updatedTask;
 
   return new Promise((resolve, reject) => {
-    const fetchQuery = `SELECT priority FROM tasks WHERE id = ?`;
+    const fetchQuery = `SELECT priority, sla_deadline FROM tasks WHERE id = ?`;
     db.query(fetchQuery, [id], (err, results) => {
       if (err) return reject(err);
 
       const currentPriority = results[0]?.priority;
-      const query = `
-        UPDATE tasks
-        SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, assigned_to = ?, user_id = ?
-        ${priority && priority !== currentPriority ? ', sla_deadline = ?' : ''}
-        WHERE id = ?
-      `;
+      const currentSlaDeadline = results[0]?.sla_deadline;
+      let query = `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, assigned_to = ?, user_id = ?, status = ?`;
+      let values = [title, description, deadline, priority, completed, assigned_to, user_id, status];
 
-      const values = priority && priority !== currentPriority
-        ? [title, description, deadline, priority, completed, assigned_to, user_id, calculateSLADeadline(priority), id]
-        : [title, description, deadline, priority, completed, assigned_to, user_id, id];
+      // Dacă statusul devine 'resolved', setează resolved_at și in_sla
+      if (status === 'resolved') {
+        const now = new Date();
+        const resolvedAt = now.toISOString().slice(0, 19).replace('T', ' ');
+        // Verifică dacă este în SLA
+        const inSla = currentSlaDeadline && new Date(resolvedAt) <= new Date(currentSlaDeadline) ? 1 : 0;
+        query += `, resolved_at = ?, in_sla = ?`;
+        values.push(resolvedAt, inSla);
+      } else if (status === 'in progress') {
+        // Dacă se revine la in progress, resetează resolved_at și in_sla
+        query += `, resolved_at = NULL, in_sla = NULL`;
+      }
+
+      // Dacă prioritatea s-a schimbat, recalculează SLA deadline
+      if (priority && priority !== currentPriority) {
+        query += ', sla_deadline = ?';
+        values.push(calculateSLADeadline(priority));
+      }
+
+      query += ' WHERE id = ?';
+      values.push(id);
 
       db.query(query, values, (err, result) => {
         if (err) return reject(err);
