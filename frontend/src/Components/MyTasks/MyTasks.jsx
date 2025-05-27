@@ -111,7 +111,7 @@ const MyTasks = () => {
       <Navbar />
       <div className="main-content container mt-4">
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-          <h2 className="fw-bold text-white">🙋‍♀️ My Tasks</h2>
+          <h2 className="fw-bold text-white">🎯 My Tasks</h2>
         </div>
 
         <div className="d-flex gap-3 mb-4 flex-wrap">
