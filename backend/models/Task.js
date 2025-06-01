@@ -1,20 +1,20 @@
 const db = require('../db');
 
-// Funcție helper pentru calculul SLA deadline
+//calculul SLA deadline
 const calculateSLADeadline = (priority) => {
   const now = new Date();
   let hours;
 
-  // Set SLA hours based on priority
+  // seteaza orele de sla bazate pe prioritate
   switch (priority) {
-    case 'Critical': hours = 12; break; // Most urgent - 12 hours
-    case 'High': hours = 27; break;     // 24 hours for High
+    case 'Critical': hours = 12; break; 
+    case 'High': hours = 27; break;     
     case 'Medium': hours = 51; break;    
     case 'Low': hours = 75; break;
     default: hours = 48;
   }
 
-  // Calculate SLA deadline and adjust for timezone
+  //calculeaza SLA deadline și ajusteaza pentru fusul orar
   const slaDeadline = new Date(now.getTime() + (hours * 60 * 60 * 1000));
 
   return slaDeadline
@@ -23,7 +23,7 @@ const calculateSLADeadline = (priority) => {
     .replace('T', ' ');
 };
 
-// Creare task (o singură implementare)
+// creare task 
 const createTask = (taskData) => {
   return new Promise((resolve, reject) => {
     const slaDeadline = calculateSLADeadline(taskData.priority);
@@ -41,8 +41,8 @@ const createTask = (taskData) => {
       taskData.description || null,
       taskData.priority,
       taskData.deadline,
-      parseInt(taskData.assigned_to, 10), // team ID
-      parseInt(taskData.user_id, 10),     // user ID
+      parseInt(taskData.assigned_to, 10), 
+      parseInt(taskData.user_id, 10),     
       slaDeadline
     ];
 
@@ -67,20 +67,20 @@ const updateTask = (id, updatedTask) => {
       let query = `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, assigned_to = ?, user_id = ?, status = ?`;
       let values = [title, description, deadline, priority, completed, assigned_to, user_id, status];
 
-      // Dacă statusul devine 'resolved', setează resolved_at și in_sla
+      // daca status este 'resolved', seteaza resolved_at și in_sla
       if (status === 'resolved') {
         const now = new Date();
         const resolvedAt = now.toISOString().slice(0, 19).replace('T', ' ');
-        // Verifică dacă este în SLA
+        // verifica daca este in SLA
         const inSla = currentSlaDeadline && new Date(resolvedAt) <= new Date(currentSlaDeadline) ? 1 : 0;
         query += `, resolved_at = ?, in_sla = ?`;
         values.push(resolvedAt, inSla);
       } else if (status === 'in progress') {
-        // Dacă se revine la in progress, resetează resolved_at și in_sla
+        //daca se revine la in progress reseteaza resolved_at si in_sla
         query += `, resolved_at = NULL, in_sla = NULL`;
       }
 
-      // Dacă prioritatea s-a schimbat, recalculează SLA deadline
+      //daca prioritatea s-a schimbat recalculeaza SLA deadline
       if (priority && priority !== currentPriority) {
         query += ', sla_deadline = ?';
         values.push(calculateSLADeadline(priority));
@@ -121,7 +121,7 @@ const toggleTaskCompleted = (id) => {
   });
 };
 
-// funcție pentru a obține task-urile paginate cu filtrare
+// functie pentru a obtine task-urile paginate cu filtrare
 const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
   return new Promise((resolve, reject) => {
     const currentPage = Math.max(1, parseInt(page) || 1);
@@ -168,7 +168,7 @@ const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
   });
 };
 
-// funcție pentru a obține numărul total de task-uri
+// functie pentru a obtine numarul total de task-uri
 const getTotalTaskCount = (filter = 'all') => {
   return new Promise((resolve, reject) => {
     let filterCondition = '';

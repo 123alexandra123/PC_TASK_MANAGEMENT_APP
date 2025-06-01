@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware pentru verificarea JWT
+// face middleware pentru autentificare JWT
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
 

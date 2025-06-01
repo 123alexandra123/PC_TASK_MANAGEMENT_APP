@@ -3,6 +3,7 @@ import './LoginRegister.css';
 import { FaUser, FaLock, FaEnvelope } from "react-icons/fa";
 import { useNavigate } from 'react-router-dom';
 
+//componenta pentru login si register
 const LoginRegister = () => {
   const [action, setAction] = useState('');
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const LoginRegister = () => {
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
 
+  //ia echipele din baza de date la incarcarea componentei
   useEffect(() => {
     const fetchTeams = async () => {
       try {
@@ -35,6 +37,7 @@ const LoginRegister = () => {
   const registerLink = () => setAction(' active');
   const loginLink = () => setAction('');
 
+  // gestioneaza login-ul
 const handleLogin = async (e) => {
   e.preventDefault();
   try {
@@ -54,9 +57,9 @@ const handleLogin = async (e) => {
         email: data.user.email,
         group: data.user.group,
         imageUrl: data.user.imageUrl || '/uploads/default-avatar.png',
-        is_admin: data.user.is_admin  // ✅ AICI salvăm flagul de admin
+        is_admin: data.user.is_admin  
       }));
-      sessionStorage.setItem('is_admin', data.user.is_admin); // ✅ extra (opțional, pentru acces rapid)
+      sessionStorage.setItem('is_admin', data.user.is_admin); 
       navigate('/main');
     } else {
       alert(data.message || 'Login failed');
@@ -68,6 +71,7 @@ const handleLogin = async (e) => {
 };
 
 
+// gestioneaza register-ul
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
@@ -96,6 +100,7 @@ const handleLogin = async (e) => {
     }
   };
 
+  //html pt login si register
   return (
     <div className="login-page">
       <div className={`wrapper${action}`}>

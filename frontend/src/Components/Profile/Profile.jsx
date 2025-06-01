@@ -4,6 +4,7 @@ import { uploadProfileImage, deleteProfileImage } from '../../services/userServi
 import './Profile.css';
 import defaultAvatar from '../Assets/default-avatar.png';
 
+// componenta pentru afisarea profilului utilizatorului
 const Profile = () => {
   const [profileImage, setProfileImage] = useState(defaultAvatar);
   const fileInputRef = useRef(null);
@@ -15,6 +16,7 @@ const Profile = () => {
     imageUrl: '/uploads/default-avatar.png',
   });
 
+  // incarca datele utilizatorului din sessionStorage la incarcarea componentei
   useEffect(() => {
     const storedUser = JSON.parse(sessionStorage.getItem('user'));
     if (storedUser) {
@@ -30,10 +32,13 @@ const Profile = () => {
     }
   }, []);
 
+  // verifica daca utilizatorul are o imagine de profil implicita
   const isDefaultImage = !user.imageUrl || user.imageUrl === '/uploads/default-avatar.png';
 
+  // gestioneaza click-ul pe imaginea de profil pentru a deschide selectorul de fisiere
   const handleImageClick = () => fileInputRef.current.click();
 
+  // gestioneaza schimbarea imaginii de profil
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -53,6 +58,7 @@ const Profile = () => {
     }
   };
 
+  // gestioneaza stergerea imaginii de profil
   const handleDeleteImage = async () => {
     if (!window.confirm('Are you sure you want to delete your profile photo?')) return;
 
@@ -67,15 +73,18 @@ const Profile = () => {
     }
   };
 
+  // gestioneaza deconectarea utilizatorului
   const handleLogout = () => {
     sessionStorage.clear();
     window.location.href = '/login';
   };
 
+  // gestioneaza eroarea la incarcarea imaginii de profil
   const handleImgError = () => {
     setProfileImage(defaultAvatar);
   };
 
+  // afiseaza componenta de profil
   return (
     <div>
       <Navbar />

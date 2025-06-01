@@ -9,7 +9,9 @@ import Charts from './Components/Charts/Charts';
 import Profile from './Components/Profile/Profile';
 import ManageTeams from './Components/ManageTeams/ManageTeams'; 
 import MyTasks from './Components/MyTasks/MyTasks';
+// componenta principala a aplicatiei unde se apeleaza toate rutele si componentele
 
+//functii pentru guards
 function ProtectedRoute({ children }) {
   const navigate = useNavigate();
   const isAuthenticated = !!sessionStorage.getItem('token');
@@ -22,7 +24,6 @@ function ProtectedRoute({ children }) {
 
   return isAuthenticated ? children : null;
 }
-
 function PublicRoute({ children }) {
   const navigate = useNavigate();
   const isAuthenticated = !!sessionStorage.getItem('token');
@@ -36,7 +37,7 @@ function PublicRoute({ children }) {
   return !isAuthenticated ? children : null;
 }
 
-// 🛡️ AdminRoute pentru acces doar adminilor (is_admin === '1')
+// rutele pt admini
 function AdminRoute({ children }) {
   const navigate = useNavigate();
   const isAuthenticated = !!sessionStorage.getItem('token');
@@ -53,6 +54,7 @@ function AdminRoute({ children }) {
   return isAuthenticated && isAdmin ? children : null;
 }
 
+// functia principala a aplicatiei  se unde se apeleaza toate rutele si componentele
 function App() {
   const [tasks, setTasks] = useState([]);
 
@@ -60,6 +62,7 @@ function App() {
     fetchTasks();
   }, []);
 
+  // ia toate task-urile de la server 
   const fetchTasks = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/tasks');
@@ -71,6 +74,7 @@ function App() {
     }
   };
 
+  // functii pentru adaugarea, editarea, stergerea si inchiderea task-urilor
   const addTask = async (newTask) => {
     try {
       await fetch('http://localhost:5000/api/tasks', {
@@ -114,6 +118,7 @@ function App() {
     await editTask(task.id, { ...task, completed: !task.completed });
   };
 
+  // toate rutele aplicatiei
   return (
     <Routes>
       <Route

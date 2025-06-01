@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import AddTaskModal from '../AddTaskModal/AddTaskModal';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
+
+//componenta principala pentru main page
 import {
   getTasks,
   createTask,
@@ -10,6 +12,7 @@ import {
   toggleTaskStatus
 } from '../../services/taskService';
 import './MainPage.css';
+
 
 const MainPage = () => {
   const [tasks, setTasks] = useState([]);
@@ -36,6 +39,8 @@ const MainPage = () => {
     }
   };
 
+
+ // ia task-urile de la server(backend)
   const fetchTasks = async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/tasks?page=${currentPage}&limit=${tasksPerPage}`);
@@ -58,10 +63,12 @@ const MainPage = () => {
     fetchTasks();
   }, [currentPage]);
 
+  //reincarca task-urile cand se schimba pagina (paginare facuta in backend cu 20 task-uri pe pagina)
   const handleTaskAdded = async () => {
     await fetchTasks();
   };
 
+  // adauga un task nou
   const handleAddTask = async (newTask) => {
     try {
       const created = await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
@@ -72,6 +79,7 @@ const MainPage = () => {
     }
   };
 
+  // editeaza un task existent
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
@@ -82,6 +90,7 @@ const MainPage = () => {
     }
   };
 
+  // sterge un task
   const handleDeleteTask = async (taskId) => {
     try {
       const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
@@ -102,6 +111,7 @@ const MainPage = () => {
     }
   };
 
+  // marcheaza un task ca fiind completat
   const handleToggleComplete = async (id) => {
     try {
       const task = tasks.find(t => t.id === id);
@@ -117,6 +127,7 @@ const MainPage = () => {
     }
   };
 
+  // sorteaza si filtreaza task-urile
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -127,10 +138,13 @@ const MainPage = () => {
     return 0;
   });
 
+  // filtreaza task-urile dupa prioritate
   const filteredTasks = filterPriority === 'all'
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
 
+
+    //html pentru pagina principala
   return (
     <div>
       <Navbar />
@@ -275,6 +289,7 @@ const MainPage = () => {
           </div>
         )}
       </div>
+
 
       <AddTaskModal
         show={showAddModal}

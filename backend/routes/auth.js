@@ -7,10 +7,12 @@ const db = require("../db");
 
 const router = express.Router();
 
+//face conexiunea la baza de date
 router.get("/", (req, res) => {
   res.send("Auth API funcționează!");
 });
 
+//se face route pentru a aduga o echipa
 router.get("/teams", async (req, res) => {
   try {
     const teams = await getAllTeams();
@@ -20,6 +22,8 @@ router.get("/teams", async (req, res) => {
   }
 });
 
+
+//se face route pentru a adauga un utilizator
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, group } = req.body;
@@ -40,6 +44,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
+//se face route pentru a loga un utilizator
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -76,6 +81,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
+//se face route pentru a lua toti utilizatorii
 router.get("/users", async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -85,7 +91,7 @@ router.get("/users", async (req, res) => {
   }
 });
 
-//Update echipă utilizator (folosit la schimbarea din dropdown)
+//se face route pentru a actualiza grupul unui utilizator
 router.patch("/users/:id", async (req, res) => {
   const userId = req.params.id;
   const { group } = req.body;

@@ -12,7 +12,7 @@ const connection = require('../db'); // Changed from '../config/database' to '..
 
 const router = express.Router();
 
-// Helper function for SLA calculation
+// calculeaza termenul limită SLA în funcție de prioritate
 const calculateSLADeadline = (priority) => {
   const now = new Date();
   let hours;
@@ -28,7 +28,7 @@ const calculateSLADeadline = (priority) => {
   return deadline.toISOString();
 };
 
-// Helper function for checking SLA status
+// verifica statusul SLA al unei sarcini
 const checkSLAStatus = (task) => {
   const now = new Date();
   const slaDeadline = new Date(task.sla_deadline);
@@ -45,7 +45,7 @@ const checkSLAStatus = (task) => {
   return { status: 'Breached', timeRemaining: 0 };
 };
 
-// Get all tasks with pagination and filtering
+// ia task urile paginate
 router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -67,7 +67,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Create new task
+//creaza task nou
 router.post("/", async (req, res) => {
   try {
     if (!req.body.priority) {
@@ -100,7 +100,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Update task
+// update task
 router.put("/:id", async (req, res) => {
   try {
     const updatedTask = {
@@ -127,7 +127,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete task
+// delete task
 router.delete("/:id", async (req, res) => {
   try {
     await deleteTask(req.params.id);
@@ -137,7 +137,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// Toggle task completion
+// toggle task completed
 router.patch("/:id/toggle", async (req, res) => {
   try {
     const task = await toggleTaskCompleted(req.params.id);
@@ -158,6 +158,7 @@ router.patch("/:id/toggle", async (req, res) => {
   }
 });
 
+// route pentru a obține numărul total de task-uri
 router.get("/count", async (req, res) => {
   try {
     const count = await getTotalTaskCount();
@@ -167,11 +168,12 @@ router.get("/count", async (req, res) => {
   }
 });
 
-// Protected route example
+// exemplu de route protejate
 router.get('/protected-route', authenticateJWT, (req, res) => {
   res.json({ message: 'This is a protected route.', user: req.user });
 });
 
+// route pentru a obtine task-urile unui utilizator specific
 router.get("/my-tasks/:userId", (req, res) => {
   const userId = req.params.userId;
   const query = `
@@ -191,6 +193,7 @@ router.get("/my-tasks/:userId", (req, res) => {
     ORDER BY t.created_at DESC
   `;
 
+  // folosim connection.query pentru a executa interogarea SQL
   connection.query(query, [userId, userId], (err, tasks) => {
     if (err) {
       console.error('Error fetching tasks:', err);

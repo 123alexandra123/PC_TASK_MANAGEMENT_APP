@@ -3,6 +3,7 @@ import Navbar from '../Navbar/Navbar';
 import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService';
 import './CompletedTasks.css';
 
+//componenta pentru afisarea task-urilor completate
 const CompletedTasks = () => {
   const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -11,6 +12,7 @@ const CompletedTasks = () => {
   const tableRef = useRef(null);
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
+  
   useEffect(() => {
     loadTasks();
     if (tableRef.current) {
@@ -18,6 +20,7 @@ const CompletedTasks = () => {
     }
   }, [currentPage]);
 
+  // incarca task-urile completate
   const loadTasks = async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage, 'completed');
@@ -28,6 +31,7 @@ const CompletedTasks = () => {
     }
   };
 
+  // stergerea task-ului
   const handleDeleteTask = async (id) => {
     try {
       await deleteTaskById(id);
@@ -37,6 +41,7 @@ const CompletedTasks = () => {
     }
   };
 
+  // inchiderea task-ului
   const handleToggleComplete = async (id) => {
     try {
       const task = tasksState.find(t => t.id === id);
@@ -51,12 +56,14 @@ const CompletedTasks = () => {
     }
   };
 
+  // schimbarea paginii
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
     }
   };
 
+  //componenta pentru afisarea task-urilor completate in html
   return (
     <div>
       <Navbar />

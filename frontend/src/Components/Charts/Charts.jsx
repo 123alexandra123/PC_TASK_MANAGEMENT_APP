@@ -29,6 +29,8 @@ ChartJS.register(
   Legend
 );
 
+// chaert uri componentei
+
 const Charts = () => {
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
@@ -38,12 +40,13 @@ const Charts = () => {
   const [endDate, setEndDate] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
 
-  // Popup state
+  
   const [popupTasks, setPopupTasks] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupTitle, setPopupTitle] = useState('');
   const [popupType, setPopupType] = useState('tasks');
 
+  //ia task-urile de la server(din backend)
   const fetchTasks = async () => {
     try {
       let url = 'http://localhost:5000/api/tasks?page=1&limit=100';
@@ -57,6 +60,7 @@ const Charts = () => {
     }
   };
 
+ //ia utilizatorii de la server(din backend)
   const fetchUsers = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/auth/users');
@@ -71,9 +75,10 @@ const Charts = () => {
   useEffect(() => {
     fetchTasks();
     fetchUsers();
-    // eslint-disable-next-line
+    
   }, [startDate, endDate]);
 
+  //filtrarea task-urilor in functie de prioritate, data si departament
   const filteredTasks = tasks.filter(task => {
     const matchesPriority = selectedPriority === 'All' || task.priority === selectedPriority;
     const matchesDepartment = selectedDepartment === 'All' || task.team_name === selectedDepartment;
@@ -83,6 +88,7 @@ const Charts = () => {
     return matchesPriority && matchesDate && matchesDepartment;
   });
 
+  //curatare filtre
   const handleClearFilters = () => {
     setSelectedPriority('All');
     setSelectedDepartment('All');
@@ -90,6 +96,7 @@ const Charts = () => {
     setEndDate('');
   };
 
+  //exporta task-urile filtrate in fisier excel
   const handleExport = () => {
     const data = filteredTasks.map(task => ({
       Title: task.title,
@@ -109,25 +116,30 @@ const Charts = () => {
     XLSX.writeFile(workbook, 'task_statistics.xlsx');
   };
 
-  // --- Chart Data ---
+  // chart cu prioritati
   const priorityLabels = ['Critical', 'High', 'Medium', 'Low'];
   const priorityCounts = priorityLabels.map(
     priority => filteredTasks.filter(task => task.priority === priority).length
   );
 
+  //numarul de task-uri in functie de status
   const completedCount = filteredTasks.filter(task => task.completed).length;
   const pendingCount = filteredTasks.filter(task => !task.completed).length;
 
+  // task-uri create in functie de data
   const createdDates = [...new Set(
     filteredTasks.map(task => new Date(task.created_at).toISOString().split('T')[0])
   )].sort();
 
+  // numarul de task-uri create in fiecare zi
   const tasksPerDay = createdDates.map(
     date => filteredTasks.filter(task =>
       new Date(task.created_at).toISOString().split('T')[0] === date
     ).length
   );
 
+
+  // numarul de task-uri in functie de SLA
   const slaStatusCounts = {
     waiting: filteredTasks.filter(task =>
       !task.completed && new Date(task.sla_deadline) > new Date()
@@ -138,12 +150,13 @@ const Charts = () => {
     completed: filteredTasks.filter(task => task.completed).length
   };
 
+  // numarul de task-uri in functie de echipa
   const teamLabels = [...new Set(filteredTasks.map(task => task.team_name))];
   const teamCounts = teamLabels.map(
     team => filteredTasks.filter(task => task.team_name === team).length
   );
 
-  // Users per team
+  // chart cu utilizatori in functie de echipa
   const teamUserMap = users.reduce((acc, user) => {
     if (!user.group) return acc;
     if (!acc[user.group]) acc[user.group] = [];
@@ -160,7 +173,7 @@ const Charts = () => {
     '#8bc34a', '#ffc107', '#e91e63', '#795548'
   ];
 
-  // --- Popup logic for all charts ---
+  // gestioneaza click-ul pe chart-uri pentru a deschide popup-ul
   const handleChartDoubleClick = (elements, chartType) => {
     if (!elements.length) return;
     const index = elements[0].index;
@@ -232,7 +245,7 @@ const Charts = () => {
     setShowPopup(true);
   };
 
-  // Chart options with click handlers
+  // optiuni pentru chart-uri
   const getChartOptions = (chartType) => {
     const baseOptions = {
       responsive: true,
@@ -256,6 +269,7 @@ const Charts = () => {
     return baseOptions;
   };
 
+  // optiuni pentru chart-uri
   const chartOptions = {
     bar: {
       responsive: true,
@@ -271,7 +285,7 @@ const Charts = () => {
         x: { ticks: { color: '#ccc' } }
       }
     },
-    // DO NOT add scales for doughnut!
+    
     doughnut: {
       responsive: true,
       maintainAspectRatio: false,
@@ -284,6 +298,7 @@ const Charts = () => {
     }
   };
 
+  // componenta principala in care se afiseaza graficele html
   return (
     <div>
       <Navbar />

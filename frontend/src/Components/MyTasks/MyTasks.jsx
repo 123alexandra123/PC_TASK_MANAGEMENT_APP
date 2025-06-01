@@ -8,6 +8,7 @@ import {
 } from '../../services/taskService';
 import './MyTasks.css';
 
+// componenta pentru afisarea task-urilor personale
 const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,10 +19,10 @@ const MyTasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const tasksPerPage = 20;
   const tableContainerRef = useRef(null);
-
   const user = JSON.parse(sessionStorage.getItem('user'));
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
+  //paginarea
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -31,6 +32,7 @@ const MyTasks = () => {
     }
   };
 
+  // incarca task-urile personale
   const fetchTasks = async () => {
     try {
       const response = await fetch(
@@ -55,10 +57,12 @@ const MyTasks = () => {
     fetchTasks();
   }, [currentPage]);
 
+  // actualizeaza task-urile dupa editare
   const handleTaskUpdated = async () => {
     await fetchTasks();
   };
 
+  //deschide popup-ul de editare
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
@@ -69,6 +73,7 @@ const MyTasks = () => {
     }
   };
 
+  // sterge task-ul
   const handleDeleteTask = async (taskId) => {
     try {
       await deleteTaskById(taskId);
@@ -84,6 +89,8 @@ const MyTasks = () => {
     }
   };
 
+  // marcheaza task-ul ca finalizat
+  // doar adminul poate inchide un task
   const handleToggleComplete = async (id) => {
     try {
       const task = tasks.find(t => t.id === id);
@@ -98,6 +105,7 @@ const MyTasks = () => {
     }
   };
 
+  // sortare si filtrare
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -112,6 +120,7 @@ const MyTasks = () => {
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
 
+    //html pentru afisarea task-urilor personale
   return (
     <div>
       <Navbar />

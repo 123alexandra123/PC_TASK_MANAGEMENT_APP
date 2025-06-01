@@ -1,6 +1,7 @@
 import React from 'react';
 import './TaskCard.css';
 
+//componenta pt un singur card de task
 const TaskCard = ({ task }) => {
     console.log('Task SLA data:', {
       id: task.id,
@@ -9,6 +10,7 @@ const TaskCard = ({ task }) => {
       timeRemaining: task.sla?.timeRemaining
     });
 
+    //html pt task card
   return (
     <div className="task-card">
       <div className="task-header">

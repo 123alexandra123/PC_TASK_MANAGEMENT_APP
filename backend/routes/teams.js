@@ -3,7 +3,7 @@ const router = express.Router();
 const Team = require('../models/Team');
 const db = require('../db');
 
-// GET all teams
+// GET - ia toate echipele
 router.get('/', async (req, res) => {
   try {
     const teams = await Team.getAllTeams();
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST - Add new team
+// POST - adauga echipa
 router.post('/', async (req, res) => {
   const { name, description } = req.body;
   if (!name || !description) {
@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT - Update team (name and description)
+// PUT - actualizeaza echipa
 router.put('/:originalName', async (req, res) => {
   const { originalName } = req.params;
   const { name, description } = req.body;
@@ -40,10 +40,10 @@ router.put('/:originalName', async (req, res) => {
   }
 
   try {
-    // Update the team name and description
+   
     await Team.updateTeam(originalName, name, description);
 
-    // If the name has changed, update the users' group reference too
+    
     if (originalName !== name) {
       await db.promise().query(
         "UPDATE users SET `group` = ? WHERE `group` = ?",
@@ -58,12 +58,12 @@ router.put('/:originalName', async (req, res) => {
   }
 });
 
-// DELETE - Delete team
+// DELETE - sterge echipa
 router.delete('/:name', async (req, res) => {
   const { name } = req.params;
 
   try {
-    // Check for assigned tasks
+    // verifica daca in echipa exista task-uri atribuite
     const [tasks] = await db.promise().query(
       "SELECT id FROM tasks WHERE assigned_to = (SELECT id FROM teams WHERE name = ?)",
       [name]
@@ -74,7 +74,7 @@ router.delete('/:name', async (req, res) => {
       });
     }
 
-    // Check for users in the team
+    // verifica daca in echipa exista utilizatori
     const [users] = await db.promise().query(
       "SELECT id FROM users WHERE `group` = ?",
       [name]
@@ -85,7 +85,7 @@ router.delete('/:name', async (req, res) => {
       });
     }
 
-    // All clear: delete the team
+    //daca e totul ok se sterge echipa
     await Team.deleteTeam(name);
     res.json({ message: 'Team deleted successfully' });
   } catch (error) {
@@ -94,7 +94,7 @@ router.delete('/:name', async (req, res) => {
   }
 });
 
-// GET users by team id
+// GET - ia utilizatorii dupa teamId
 router.get('/:teamId/users', async (req, res) => {
   try {
     const users = await Team.getUsersByTeamId(req.params.teamId);

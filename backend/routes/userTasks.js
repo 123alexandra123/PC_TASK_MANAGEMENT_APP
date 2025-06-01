@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
-// ✅ EXISTENT: Returnează numărul de taskuri incomplete ale unui utilizator
+// returnează numărul de task-uri incomplete pentru un utilizator
 router.get('/:userId/incomplete-tasks-count', async (req, res) => {
   const userId = req.params.userId;
   try {
@@ -16,7 +16,7 @@ router.get('/:userId/incomplete-tasks-count', async (req, res) => {
   }
 });
 
-// ✅ NOU: Returnează task-urile atribuite unui utilizator, cu paginare + SLA
+// route pentru a obține task-urile unui utilizator specific
 router.get('/:userId/tasks', async (req, res) => {
   const userId = req.params.userId;
   const page = parseInt(req.query.page) || 1;

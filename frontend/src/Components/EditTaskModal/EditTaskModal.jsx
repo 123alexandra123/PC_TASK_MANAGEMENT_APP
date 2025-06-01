@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './EditTaskModal.css';
 
+// componenta pentru editarea unui task existent
 const EditTaskModal = ({ show, task, onClose, onSave }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -12,6 +13,7 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
     const [users, setUsers] = useState([]);
     const isAdmin = sessionStorage.getItem('is_admin') === '1';
   
+    // initializare a starii cu datele task-ului
     useEffect(() => {
       if (task) {
         setTitle(task.title);
@@ -23,8 +25,9 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
       }
     }, [task]);
   
+    // ia echipele la deschiderea editului
     useEffect(() => {
-      // Fetch teams from backend
+      
       const fetchTeams = async () => {
         try {
           const response = await fetch('http://localhost:5000/api/auth/teams');
@@ -37,8 +40,9 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
       fetchTeams();
     }, []);
   
+    // ia utilizatorii cand se selecteaza o echipa
     useEffect(() => {
-      // Fetch users for selected team from backend
+      
       if (!selectedTeam) {
         setUsers([]);
         setSelectedUser('');
@@ -56,6 +60,7 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
       fetchUsers();
     }, [selectedTeam]);
   
+    // gestioneaza submit-ul formularului
     const handleSubmit = (e) => {
       e.preventDefault();
       if (!title) return;
@@ -74,6 +79,7 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
   
     if (!show) return null;
   
+    // componenta de editare a task-ului in html
     return (
       <div className="modal-overlay">
         <div className="modal-content">
@@ -157,7 +163,7 @@ const EditTaskModal = ({ show, task, onClose, onSave }) => {
                 >
                   <option value="in progress">In Progress</option>
                   <option value="resolved">Resolved</option>
-                  {/* Optiunea Closed nu mai este afisata */}
+                  {}
                 </select>
               </div>
   

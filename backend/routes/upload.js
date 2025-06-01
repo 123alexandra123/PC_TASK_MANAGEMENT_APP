@@ -11,7 +11,7 @@ router.get('/test', (req, res) => {
 });
 
 
-// Configurare stocare fișiere
+// pentru a salva fișierele (poza de profil) în directorul "uploads"
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 🔼 Upload imagine profil
+// incarca imaginea de profil a utilizatorului
 router.post('/profile-image/:userId', upload.single('image'), async (req, res) => {
   const userId = req.params.userId;
 
@@ -41,7 +41,7 @@ router.post('/profile-image/:userId', upload.single('image'), async (req, res) =
   }
 });
 
-// ❌ Șterge imaginea și setează default-avatar
+// resetează imaginea de profil a utilizatorului la una implicită si șterge poza existenta
 router.delete('/profile-image/:userId', async (req, res) => {
     console.log("DELETE request for userId:", req.params.userId); // 👈
   const userId = req.params.userId;
@@ -51,7 +51,7 @@ router.delete('/profile-image/:userId', async (req, res) => {
     const user = await findUserById(userId);
     const currentImage = user?.profile_image;
 
-    // Șterge doar dacă nu e default și fișierul există
+    // sterge imaginea curenta daca nu este cea implicita
     if (currentImage && currentImage !== defaultUrl) {
       const filePath = path.join(__dirname, '..', currentImage);
       if (fs.existsSync(filePath)) {

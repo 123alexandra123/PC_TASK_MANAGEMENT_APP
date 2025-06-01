@@ -2,6 +2,7 @@ import React from 'react';
 import * as XLSX from 'xlsx';
 import './TaskPopup.css';
 
+//componenta pt popup-ul de task-uri la chart uri 
 const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
   if (!show) return null;
 

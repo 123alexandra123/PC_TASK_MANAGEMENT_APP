@@ -1,6 +1,6 @@
 const db = require("../db");
 
-// Get all teams
+//get all teams
 const getAllTeams = () => {
   return new Promise((resolve, reject) => {
     db.query("SELECT * FROM teams", (err, results) => {
@@ -10,7 +10,7 @@ const getAllTeams = () => {
   });
 };
 
-// Add a new team
+//add team
 const addTeam = (name, description) => {
   return new Promise((resolve, reject) => {
     db.query(
@@ -24,7 +24,7 @@ const addTeam = (name, description) => {
   });
 };
 
-// Update team name and description
+// update la team name si description
 const updateTeam = (originalName, newName, description) => {
   return new Promise((resolve, reject) => {
     db.query(
@@ -38,7 +38,7 @@ const updateTeam = (originalName, newName, description) => {
   });
 };
 
-// Delete a team
+//delete team
 const deleteTeam = (name) => {
   return new Promise((resolve, reject) => {
     db.query(
@@ -52,7 +52,7 @@ const deleteTeam = (name) => {
   });
 };
 
-// Get users by team id
+//se iau userii dupa team id
 const getUsersByTeamId = (teamId) => {
   return new Promise((resolve, reject) => {
     db.query(

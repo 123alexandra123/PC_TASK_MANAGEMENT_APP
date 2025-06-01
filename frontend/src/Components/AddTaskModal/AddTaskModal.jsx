@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import './AddTaskModal.css';
 
+// componenta pentru adaugarea unui nou task
 const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('Medium'); // Default priority
+  const [priority, setPriority] = useState('Medium'); 
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
 
+  //ia echipele la deschiderea componentei
   useEffect(() => {
     const fetchTeams = async () => {
       try {
@@ -24,6 +26,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
     fetchTeams();
   }, []);
 
+  //ia utilizatorii cand se selecteaza o echipa
   useEffect(() => {
     if (!selectedTeam) {
       setUsers([]);
@@ -44,6 +47,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
     fetchUsers();
   }, [selectedTeam]);
 
+  // gestioneaza submit-ul formularului
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !selectedTeam || !selectedUser) {
@@ -60,8 +64,8 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
           title,
           description,
           priority,
-          assigned_to: selectedTeam, // team ID
-          user_id: selectedUser      // user ID
+          assigned_to: selectedTeam, 
+          user_id: selectedUser      
         })
       });
 
@@ -71,7 +75,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
         setPriority('Medium');
         setSelectedTeam('');
         setSelectedUser('');
-        // Call the parent's onTaskAdded callback
+        
         onTaskAdded && onTaskAdded();
         onClose();
       } else {
@@ -85,6 +89,7 @@ const AddTaskModal = ({ show, onClose, onTaskAdded }) => {
 
   if (!show) return null;
 
+  // componenta pentru adaugarea unui nou task
   return (
     <div className={`modal-overlay ${show ? 'show' : ''}`}>
       <div className="modal-content">

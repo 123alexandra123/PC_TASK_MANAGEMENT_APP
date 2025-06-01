@@ -5,9 +5,12 @@ import './Navbar.css';
 import { FaUser } from "react-icons/fa";
 import { NavLink } from 'react-router-dom';
 
+//verifica daca utilizatorul este admin
 const Navbar = () => {
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
+  // daca nu este admin, nu afiseaza meniul de administrare 
+  //html pt componenta de navbar
   return (
     <nav className="navbar navbar-expand-lg fixed-top">
       <div className="container-fluid">
@@ -81,7 +84,7 @@ const Navbar = () => {
                 </NavLink>
               </li>
 
-              {/* ✅ Vizibil doar pentru admini */}
+              {}
               {isAdmin && (
                 <li className="nav-item">
                   <NavLink

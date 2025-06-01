@@ -9,6 +9,7 @@ import {
 } from '../../services/taskService';
 import './PendingTasks.css';
 
+// componenta pentru afisarea task-urilor in asteptare
 const PendingTasks = () => {
   const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,6 +20,7 @@ const PendingTasks = () => {
   const tableRef = useRef(null);
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
+  // incarca task-urile la deschiderea componentei
   const loadTasks = useCallback(async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage, 'pending');
@@ -33,6 +35,7 @@ const PendingTasks = () => {
     loadTasks();
   }, [loadTasks]);
 
+  //se ocupa de stergerea task-ului
   const handleDeleteTask = async (id) => {
     try {
       await deleteTaskById(id);
@@ -42,6 +45,7 @@ const PendingTasks = () => {
     }
   };
 
+  // se ocupa de inchiderea task-ului
   const handleToggleComplete = async (id) => {
     try {
       const task = tasksState.find(t => t.id === id);
@@ -56,6 +60,7 @@ const PendingTasks = () => {
     }
   };
 
+  // se ocupa de editarea task-ului
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
@@ -66,6 +71,7 @@ const PendingTasks = () => {
     }
   };
 
+  // se ocupa de paginare
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -75,6 +81,7 @@ const PendingTasks = () => {
     }
   };
 
+  //html pt componenta de task-uri in asteptare
   return (
     <div>
       <Navbar />

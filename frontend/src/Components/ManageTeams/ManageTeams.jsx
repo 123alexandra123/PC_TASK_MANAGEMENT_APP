@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../Navbar/Navbar';
 import './ManageTeams.css';
 
+// componenta pentru gestionarea echipelor doar de admin
 const ManageTeams = () => {
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState({});
@@ -18,6 +19,7 @@ const ManageTeams = () => {
   const [showIncompletePopup, setShowIncompletePopup] = useState(false);
   const [incompleteUserName, setIncompleteUserName] = useState('');
 
+  //ia utilizatorii si echipele la incarcarea componentei
   useEffect(() => {
     fetchUsersAndTeams();
   }, []);
@@ -50,9 +52,10 @@ const ManageTeams = () => {
       console.error('Failed to fetch users or teams:', err);
     }
   };
-
+ 
+  // gestioneaza schimbarea echipei pentru un utilizator
   const handleTeamChange = async (userId, newTeam) => {
-    // Check for incomplete tasks before allowing team change
+    
     try {
       const res = await fetch(`http://localhost:5000/api/users/${userId}/incomplete-tasks-count`);
       const data = await res.json();
@@ -63,18 +66,22 @@ const ManageTeams = () => {
         return;
       }
     } catch (err) {
-      // fallback: allow change if error
+      
     }
 
+    // actualizeaza utilizatorul in starea actuala
     const updatedUsers = users.map(user =>
       user.id === userId ? { ...user, group: newTeam === 'No Team' ? null : newTeam } : user
     );
     setUsers(updatedUsers);
 
+    // actualizeaza echipele in starea actuala
     const updatedTeams = { ...teams };
     Object.keys(updatedTeams).forEach(team => {
       updatedTeams[team] = updatedTeams[team].filter(user => user.id !== userId);
     });
+
+    // adauga utilizatorul in noua echipa
     const updatedUser = updatedUsers.find(user => user.id === userId);
     const targetTeam = updatedUser.group || 'No Team';
     if (!updatedTeams[targetTeam]) updatedTeams[targetTeam] = [];
@@ -92,6 +99,7 @@ const ManageTeams = () => {
     }
   };
 
+  // gestioneaza adaugarea unei echipe noi
   const handleAddTeam = async () => {
     if (!newTeamName.trim() || !newTeamDescription.trim()) return;
 
@@ -116,6 +124,7 @@ const ManageTeams = () => {
     }
   };
 
+  // gestioneaza editarea unei echipe existente
   const handleEditTeam = async () => {
     if (!editTeamName.trim() || !editTeamDescription.trim()) return;
 
@@ -141,6 +150,7 @@ const ManageTeams = () => {
     }
   };
 
+  // gestioneaza stergerea unei echipe
   const handleDeleteTeam = async (teamName) => {
     if (!window.confirm(`Are you sure you want to delete team "${teamName}"?`)) return;
 
@@ -167,6 +177,7 @@ const ManageTeams = () => {
     user.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  //html pt componenta ManageTeams
   return (
     <div>
       <Navbar />
