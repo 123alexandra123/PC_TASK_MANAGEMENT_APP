@@ -72,23 +72,66 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
               ))}
             </div>
           ) : (
-            <div className="task-list">
-              {tasks.map(task => (
-                <div key={task.id} className="task-item">
-                  <h5>{task.title}</h5>
-                  <p className="description">{task.description || 'No description'}</p>
-                  <div className="task-meta">
-                    <span className={`priority ${task.priority.toLowerCase()}`}>
-                      {task.priority}
-                    </span>
-                    <span className="team">{task.team_name || 'Unassigned'}</span>
-                    <span className="assigned">{task.assigned_to_name ? `Assigned: ${task.assigned_to_name}` : ''}</span>
-                    <span className="date">
-                      Created: {new Date(task.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="task-table-wrapper">
+              <div className="table-responsive">
+                <table className="table table-dark table-bordered table-hover align-middle text-white">
+                  <thead>
+                    <tr>
+                      <th>✔</th>
+                      <th>Title & SLA</th>
+                      <th>Description</th>
+                      <th>Created</th>
+                      <th>Team</th>
+                      <th>Priority</th>
+                      <th>SLA Time</th>
+                      <th>Status</th>
+                      <th>In SLA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map(task => (
+                      <tr key={task.id}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={task.completed}
+                            disabled
+                          />
+                        </td>
+                        <td>
+                          <div className={`fw-bold ${task.completed ? 'completed-task-title' : ''}`}>
+                            {task.title}
+                          </div>
+                          <span className={`sla-badge ${
+                            task.completed ? 'sla-completed' :
+                            task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                          }`}>
+                            {task.sla?.status || 'Waiting'}
+                          </span>
+                        </td>
+                        <td className="small">{task.description}</td>
+                        <td>
+                          {new Date(task.created_at).toLocaleDateString()}
+                          <br />
+                          <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                            {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </td>
+                        <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
+                        <td>{task.priority}</td>
+                        <td>{task.sla?.timeRemaining || 0}h</td>
+                        <td>{task.status}</td>
+                        <td>
+                          <span style={{ color: task.in_sla === 1 ? '#4caf50' : task.in_sla === 0 ? '#f44336' : '#aaa', fontWeight: 'bold' }}>
+                            {task.in_sla === null ? '-' : (task.in_sla ? 'In SLA' : 'Out of SLA')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
