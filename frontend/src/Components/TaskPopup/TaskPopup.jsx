@@ -3,35 +3,34 @@ import * as XLSX from 'xlsx';
 import './TaskPopup.css';
 
 const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
-  if (!show) return null;
-
   const handleExport = () => {
-    let data;
-    if (popupType === 'users') {
-      data = tasks.map(user => ({
-        Name: user.name,
-        Email: user.email,
-        Team: user.group
-      }));
-    } else {
-      data = tasks.map(task => ({
-        Title: task.title,
-        Description: task.description || '',
-        Priority: task.priority,
-        Team: task.team_name || '',
-        AssignedTo: task.assigned_to_name || '',
-        Status: task.completed ? 'Completed' : 'Pending',
-        Created: new Date(task.created_at).toLocaleDateString(),
-        Deadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString() : ''
-      }));
-    }
+    if (!tasks.length) return;
+
+    const data = tasks.map(task => ({
+      ID: task.id,
+      Title: task.title,
+      Description: task.description || '',
+      Priority: task.priority,
+      Status: task.status || '',
+      Completed: task.completed ? 'Yes' : 'No',
+      CreatedAt: task.created_at ? new Date(task.created_at).toLocaleDateString('ro-RO') : '',
+      Team: task.team_name || '',
+      AssignedTo: task.assigned_user_name || '',
+      SLADeadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString('ro-RO') : '',
+      SLAStatus: task.sla?.status || '',
+      SLATimeRemaining: `${task.sla?.timeRemaining || 0}h`,
+      InSLA: task.in_sla === null ? '-' : task.in_sla ? 'Yes' : 'No',
+      ResolvedAt: task.resolved_at ? new Date(task.resolved_at).toLocaleDateString('ro-RO') : '',
+      UpdatedAt: task.updated_at ? new Date(task.updated_at).toLocaleDateString('ro-RO') : ''
+    }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, popupType === 'users' ? 'Users' : 'Tasks');
-    const filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.xlsx`;
-    XLSX.writeFile(workbook, filename);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
+    XLSX.writeFile(workbook, `${title.replace(/[^a-zA-Z0-9]/g, '_')}_tasks.xlsx`);
   };
+
+  if (!show) return null;
 
   return (
     <div className="popup-overlay" onClick={onClose}>
@@ -40,13 +39,15 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
           <div className="d-flex justify-content-between align-items-center w-100">
             <h4>{title}</h4>
             <div className="d-flex gap-2">
-              <button
-                className="btn btn-success btn-sm"
-                onClick={handleExport}
-                title="Export to Excel"
-              >
-                Export ⬇️
-              </button>
+              {popupType === 'tasks' && tasks.length > 0 && (
+                <button
+                  className="btn btn-success btn-sm"
+                  onClick={handleExport}
+                  title="Export to Excel"
+                >
+                  Export ⬇️
+                </button>
+              )}
               <button
                 className="close-button"
                 onClick={onClose}

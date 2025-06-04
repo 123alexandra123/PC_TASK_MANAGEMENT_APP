@@ -99,14 +99,21 @@ const Charts = () => {
   //exporta task-urile filtrate in fisier excel
   const handleExport = () => {
     const data = filteredTasks.map(task => ({
+      ID: task.id,
       Title: task.title,
-      Description: task.description,
+      Description: task.description || '',
+      Status: task.status || 'in progress',
       Priority: task.priority,
       Completed: task.completed ? 'Yes' : 'No',
-      CreatedAt: new Date(task.created_at).toLocaleDateString(),
-      Deadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleDateString() : '',
       Team: task.team_name || '',
-      AssignedTo: task.assigned_to_name || ''
+      AssignedTo: task.assigned_user_name || '',
+      CreatedAt: task.created_at ? new Date(task.created_at).toLocaleString('ro-RO') : '',
+      UpdatedAt: task.updated_at ? new Date(task.updated_at).toLocaleString('ro-RO') : '',
+      ResolvedAt: task.resolved_at ? new Date(task.resolved_at).toLocaleString('ro-RO') : '',
+      SLADeadline: task.sla_deadline ? new Date(task.sla_deadline).toLocaleString('ro-RO') : '',
+      SLAStatus: task.sla?.status || 'Unknown',
+      SLATimeRemaining: `${task.sla?.timeRemaining || 0}h`,
+      InSLA: task.in_sla === 1 ? 'Yes' : task.in_sla === 0 ? 'No' : '-'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
