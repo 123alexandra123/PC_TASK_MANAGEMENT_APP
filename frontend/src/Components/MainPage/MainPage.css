@@ -53,6 +53,17 @@ body {
   color: #f36666;
 }
 
+.modal-content{
+  
+  max-height: 660px;
+
+}
+
+.modal-overlay{
+  padding-top: 200px;
+  max-height: 660px;
+}
+
 .btn-outline-danger:hover {
   background-color: #900e0e;
   color: #fff;

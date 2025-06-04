@@ -2,7 +2,6 @@ import React from 'react';
 import * as XLSX from 'xlsx';
 import './TaskPopup.css';
 
-//componenta pt popup-ul de task-uri la chart uri 
 const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
   if (!show) return null;
 
@@ -41,15 +40,15 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
           <div className="d-flex justify-content-between align-items-center w-100">
             <h4>{title}</h4>
             <div className="d-flex gap-2">
-              <button 
+              <button
                 className="btn btn-success btn-sm"
                 onClick={handleExport}
                 title="Export to Excel"
               >
                 Export ⬇️
               </button>
-              <button 
-                className="close-button" 
+              <button
+                className="close-button"
                 onClick={onClose}
                 title="Close"
               >
@@ -58,11 +57,17 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
             </div>
           </div>
         </div>
-        <div className="popup-body">
+
+        <div
+          className="popup-body"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
           {tasks.length === 0 ? (
-            <p className="text-muted">{popupType === 'users' ? 'No users found' : 'No tasks found'}</p>
+            <p className="text-muted">
+              {popupType === 'users' ? 'No users found' : 'No tasks found'}
+            </p>
           ) : popupType === 'users' ? (
-            <div className="user-list">
+            <div className="user-list" style={{ flex: 1, overflowY: 'auto' }}>
               {tasks.map(user => (
                 <div key={user.id} className="user-item">
                   <strong>{user.name}</strong>
@@ -72,8 +77,11 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
               ))}
             </div>
           ) : (
-            <div className="task-table-wrapper">
-              <div className="table-responsive">
+            <div
+              className="task-table-wrapper"
+              style={{ flex: 1, overflowY: 'auto' }}
+            >
+              <div className="table-responsive" style={{ maxHeight: '700px' }}>
                 <table className="table table-dark table-bordered table-hover align-middle text-white">
                   <thead>
                     <tr>
@@ -104,8 +112,11 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
                             {task.title}
                           </div>
                           <span className={`sla-badge ${
-                            task.completed ? 'sla-completed' :
-                            task.sla?.status === 'Breached' ? 'sla-breached' : 'sla-waiting'
+                            task.completed
+                              ? 'sla-completed'
+                              : task.sla?.status === 'Breached'
+                              ? 'sla-breached'
+                              : 'sla-waiting'
                           }`}>
                             {task.sla?.status || 'Waiting'}
                           </span>
@@ -115,16 +126,38 @@ const TaskPopup = ({ show, onClose, tasks, title, popupType }) => {
                           {new Date(task.created_at).toLocaleDateString()}
                           <br />
                           <span style={{ fontSize: '0.85em', color: '#aaa' }}>
-                            {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(task.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </span>
                         </td>
-                        <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
+                        <td>
+                          {task.team_name || 'Unassigned'}
+                          {task.assigned_user_name
+                            ? ` / ${task.assigned_user_name}`
+                            : ''}
+                        </td>
                         <td>{task.priority}</td>
                         <td>{task.sla?.timeRemaining || 0}h</td>
                         <td>{task.status}</td>
                         <td>
-                          <span style={{ color: task.in_sla === 1 ? '#4caf50' : task.in_sla === 0 ? '#f44336' : '#aaa', fontWeight: 'bold' }}>
-                            {task.in_sla === null ? '-' : (task.in_sla ? 'In SLA' : 'Out of SLA')}
+                          <span
+                            style={{
+                              color:
+                                task.in_sla === 1
+                                  ? '#4caf50'
+                                  : task.in_sla === 0
+                                  ? '#f44336'
+                                  : '#aaa',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {task.in_sla === null
+                              ? '-'
+                              : task.in_sla
+                              ? 'In SLA'
+                              : 'Out of SLA'}
                           </span>
                         </td>
                       </tr>

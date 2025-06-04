@@ -1,5 +1,4 @@
-/* TaskPopup.css */
-
+/* Overlay-ul întunecat de fundal */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -13,19 +12,21 @@
   z-index: 1000;
 }
 
+/* Containerul principal al popup-ului */
 .popup-content {
   background: #222;
   color: white;
   padding: 20px;
   border-radius: 12px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow: hidden;
+  width: 1100px;
+  max-width: 95vw;
+  height: 80vh;
   display: flex;
   flex-direction: column;
-  width: 1000px;
+  overflow: hidden;
 }
 
+/* Headerul popup-ului */
 .popup-header {
   margin-bottom: 10px;
   display: flex;
@@ -33,12 +34,49 @@
   align-items: center;
 }
 
+/* Conținutul principal (corpul popupului) */
 .popup-body {
   flex: 1;
-  overflow-y: auto;
-  max-height: calc(90vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
+/* Wrapper pentru tabel - gestionează scrollul */
+.task-table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Stilul tabelului */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+/* Celulele de tabel */
+.table th,
+.table td {
+  vertical-align: middle !important;
+  padding: 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Scrollbar personalizat pentru tabel */
+.task-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.task-table-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+/* Butonul de închidere (X) */
 .close-button {
   background: transparent;
   border: none;
@@ -47,6 +85,7 @@
   cursor: pointer;
 }
 
+/* Lista de utilizatori (modul users) */
 .user-list {
   display: flex;
   flex-direction: column;
@@ -60,14 +99,7 @@
   border: 1px solid #444;
 }
 
-.task-table-wrapper {
-  min-width: 800px;
-}
-
-.table th, .table td {
-  vertical-align: middle !important;
-}
-
+/* Badge-uri SLA */
 .sla-badge {
   display: inline-block;
   margin-top: 4px;
@@ -92,17 +124,8 @@
   color: white;
 }
 
+/* Titlu tăiat pentru taskuri completate */
 .completed-task-title {
   text-decoration: line-through;
   color: #888;
-}
-
-/* Scrollbar styling (optional) */
-.popup-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.popup-body::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
 }
