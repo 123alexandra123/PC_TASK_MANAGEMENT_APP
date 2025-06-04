@@ -68,9 +68,9 @@ const updateTask = (id, updatedTask) => {
       let values = [title, description, deadline, priority, completed, assigned_to, user_id, status];
 
       // daca status este 'resolved', seteaza resolved_at și in_sla
-      if (status === 'resolved') {
-        const now = new Date();
-        const resolvedAt = now.toISOString().slice(0, 19).replace('T', ' ');
+      if (status === 'resolved') {        const now = new Date();
+        // Set resolvedAt in Europe/Bucharest timezone, format MySQL
+        const resolvedAt = now.toLocaleString('sv-SE', { timeZone: 'Europe/Bucharest' }).replace('T', ' ');
         // verifica daca este in SLA
         const inSla = currentSlaDeadline && new Date(resolvedAt) <= new Date(currentSlaDeadline) ? 1 : 0;
         query += `, resolved_at = ?, in_sla = ?`;
@@ -143,7 +143,12 @@ const getPaginatedTasks = (page, limit = 20, filter = 'all') => {
           WHEN NOW() > t.sla_deadline THEN 'Breached'
           ELSE 'Waiting'
         END as sla_status,
-        TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline) as hours_remaining
+        CASE 
+          WHEN t.status = 'resolved' AND t.resolved_at IS NOT NULL THEN GREATEST(0, TIMESTAMPDIFF(HOUR, t.resolved_at, t.sla_deadline))
+          ELSE GREATEST(0, TIMESTAMPDIFF(HOUR, NOW(), t.sla_deadline))
+        END as hours_remaining,
+        t.resolved_at,
+        t.updated_at
       FROM tasks t
       LEFT JOIN teams ON t.assigned_to = teams.id
       LEFT JOIN users ON t.user_id = users.id

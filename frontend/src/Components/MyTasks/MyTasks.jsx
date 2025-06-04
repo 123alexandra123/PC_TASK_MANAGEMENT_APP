@@ -162,13 +162,15 @@ const MyTasks = () => {
                   <th>SLA Time</th>
                   <th>Status</th>
                   <th>In SLA</th>
+                  <th>Resolved At</th>
+                  <th>Updated At</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTasks.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="text-center text-white">No tasks found for current filter.</td>
+                    <td colSpan="12" className="text-center text-white">No tasks found for current filter.</td>
                   </tr>
                 ) : (
                   filteredTasks.map(task => (
@@ -191,12 +193,16 @@ const MyTasks = () => {
                         </span>
                       </td>
                       <td className="small">{task.description}</td>
-                      <td>
-                        {new Date(task.created_at).toLocaleDateString()}
-                        <br />
-                        <span style={{ fontSize: '0.85em', color: '#aaa' }}>
-                          {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      <td className="small-date">
+                        {task.created_at ? (
+                          <>
+                            {new Date(task.created_at).toLocaleDateString('ro-RO')}
+                            <br />
+                            <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                              {new Date(task.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </>
+                        ) : '-'}
                       </td>
                       <td>{task.team_name || 'Unassigned'}{task.assigned_user_name ? ` / ${task.assigned_user_name}` : ''}</td>
                       <td>{task.priority}</td>
@@ -207,6 +213,28 @@ const MyTasks = () => {
                           {task.in_sla === null ? '-' : (task.in_sla ? 'In SLA' : 'Out of SLA')}
                         </span>
                       </td>
+                      <td className="small-date">
+                        {task.resolved_at ? (
+                          <>
+                            {new Date(task.resolved_at).toLocaleDateString('ro-RO')}
+                            <br />
+                            <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                              {new Date(task.resolved_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </>
+                        ) : '-'}
+                      </td>
+                      <td className="small-date">
+                        {task.updated_at ? (
+                          <>
+                            {new Date(task.updated_at).toLocaleDateString('ro-RO')}
+                            <br />
+                            <span style={{ fontSize: '0.85em', color: '#aaa' }}>
+                              {new Date(task.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </>
+                        ) : '-'}
+                      </td>
                       <td>
                         <div className="d-flex gap-2">
                           <button
@@ -214,15 +242,17 @@ const MyTasks = () => {
                               setSelectedTask(task);
                               setShowEditModal(true);
                             }}
-                            className="btn btn-outline-primary btn-sm"
+                            className="icon-btn edit"
+                            title="Edit Task"
                           >
-                            Edit
+                            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#6c63ff" strokeWidth="2" d="M16.5 3.5l4 4-12 12H4.5v-4z"/><path stroke="#6c63ff" strokeWidth="2" d="M15 5l4 4"/></svg>
                           </button>
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)} 
-                            className="btn btn-outline-danger btn-sm"
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="icon-btn delete"
+                            title="Delete Task"
                           >
-                            Delete
+                            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="#f44336" strokeWidth="2" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12z"/></svg>
                           </button>
                         </div>
                       </td>
