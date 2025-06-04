@@ -7,28 +7,26 @@ const {
   getPaginatedTasks,
   getTotalTaskCount
 } = require("../models/Task");
+
 const authenticateJWT = require('./authMiddleware');
-const connection = require('../db'); // Changed from '../config/database' to '../db'
+const connection = require('../db');
+const { sendTaskNotification } = require('../utils/emailService');
 
 const router = express.Router();
 
-// calculeaza termenul limită SLA în funcție de prioritate
 const calculateSLADeadline = (priority) => {
   const now = new Date();
   let hours;
-
   switch (priority) {
     case 'High': hours = 24; break;
     case 'Medium': hours = 48; break;
     case 'Low': hours = 72; break;
     default: hours = 48;
   }
-
   const deadline = new Date(now.getTime() + hours * 60 * 60 * 1000);
   return deadline.toISOString();
 };
 
-// verifica statusul SLA al unei sarcini
 const checkSLAStatus = (task) => {
   const now = new Date();
   const slaDeadline = new Date(task.sla_deadline);
@@ -45,11 +43,11 @@ const checkSLAStatus = (task) => {
   return { status: 'Breached', timeRemaining: 0 };
 };
 
-// ia task urile paginate
+// GET all tasks
 router.get("/", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20; // updated to default 20
+    const limit = parseInt(req.query.limit) || 20;
     const filter = req.query.filter || 'all';
 
     const tasks = await getPaginatedTasks(page, limit, filter);
@@ -67,7 +65,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-//creaza task nou
+// POST - creare task nou
 router.post("/", async (req, res) => {
   try {
     if (!req.body.priority) {
@@ -78,8 +76,8 @@ router.post("/", async (req, res) => {
     const taskData = {
       ...req.body,
       sla_deadline: slaDeadline,
-      assigned_to: req.body.assigned_to, // team ID
-      user_id: req.body.user_id // user ID
+      assigned_to: req.body.assigned_to,
+      user_id: req.body.user_id
     };
 
     const result = await createTask(taskData);
@@ -94,25 +92,66 @@ router.post("/", async (req, res) => {
       }
     };
 
+    if (taskData.user_id) {
+      const userQuery = `SELECT name, email FROM users WHERE id = ? LIMIT 1`;
+      connection.query(userQuery, [taskData.user_id], async (err, results) => {
+        if (!err && results.length > 0) {
+          const user = results[0];
+          await sendTaskNotification(
+            user.email,
+            'Ai primit un nou task',
+            `<p>Salut <strong>${user.name}</strong>,</p>
+             <p>Ți-a fost atribuit un nou task:</p>
+             <ul>
+               <li><strong>Titlu:</strong> ${taskData.title}</li>
+               <li><strong>Prioritate:</strong> ${taskData.priority}</li>
+               <li><strong>Descriere:</strong> ${taskData.description || 'Fără descriere'}</li>
+             </ul>
+             <p>Verifică aplicația pentru mai multe detalii.</p>`
+          );
+        }
+      });
+    }
+
     res.status(201).json(newTask);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// update task
+// PUT - actualizare task
 router.put("/:id", async (req, res) => {
   try {
     const updatedTask = {
       ...req.body,
       sla_deadline: req.body.priority ? calculateSLADeadline(req.body.priority) : undefined,
-      assigned_to: req.body.assigned_to, // team ID
-      user_id: req.body.user_id // user ID
+      assigned_to: req.body.assigned_to,
+      user_id: req.body.user_id
     };
 
     await updateTask(req.params.id, updatedTask);
     const task = { id: req.params.id, ...updatedTask };
     const slaInfo = checkSLAStatus(task);
+
+    if (updatedTask.user_id) {
+      const userQuery = `SELECT name, email FROM users WHERE id = ? LIMIT 1`;
+      connection.query(userQuery, [updatedTask.user_id], async (err, results) => {
+        if (!err && results.length > 0) {
+          const user = results[0];
+          await sendTaskNotification(
+            user.email,
+            'Task actualizat',
+            `<p>Salut <strong>${user.name}</strong>,</p>
+             <p>Un task care îți este atribuit a fost actualizat:</p>
+             <ul>
+               <li><strong>Titlu:</strong> ${updatedTask.title}</li>
+               <li><strong>Prioritate:</strong> ${updatedTask.priority}</li>
+               <li><strong>Descriere:</strong> ${updatedTask.description || 'Fără descriere'}</li>
+             </ul>`
+          );
+        }
+      });
+    }
 
     res.json({
       ...task,
@@ -127,17 +166,34 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// delete task
+// DELETE - ștergere task
 router.delete("/:id", async (req, res) => {
   try {
-    await deleteTask(req.params.id);
-    res.json({ message: "Task deleted" });
+    const getQuery = `SELECT u.name, u.email, t.title FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = ?`;
+    connection.query(getQuery, [req.params.id], async (err, results) => {
+      if (!err && results.length > 0) {
+        const { name, email, title } = results[0];
+
+        await deleteTask(req.params.id);
+
+        await sendTaskNotification(
+          email,
+          'Task șters',
+          `<p>Salut <strong>${name}</strong>,</p>
+           <p>Taskul intitulat <strong>${title}</strong> a fost șters din sistem.</p>`
+        );
+
+        res.json({ message: "Task deleted" });
+      } else {
+        res.status(404).json({ error: "Task not found or already deleted" });
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// toggle task completed
+// PATCH - toggle completare
 router.patch("/:id/toggle", async (req, res) => {
   try {
     const task = await toggleTaskCompleted(req.params.id);
@@ -158,7 +214,7 @@ router.patch("/:id/toggle", async (req, res) => {
   }
 });
 
-// route pentru a obține numărul total de task-uri
+// Count
 router.get("/count", async (req, res) => {
   try {
     const count = await getTotalTaskCount();
@@ -168,12 +224,7 @@ router.get("/count", async (req, res) => {
   }
 });
 
-// exemplu de route protejate
-router.get('/protected-route', authenticateJWT, (req, res) => {
-  res.json({ message: 'This is a protected route.', user: req.user });
-});
-
-// route pentru a obtine task-urile unui utilizator specific
+// Taskuri pt utilizator
 router.get("/my-tasks/:userId", (req, res) => {
   const userId = req.params.userId;
   const query = `
@@ -193,7 +244,6 @@ router.get("/my-tasks/:userId", (req, res) => {
     ORDER BY t.created_at DESC
   `;
 
-  // folosim connection.query pentru a executa interogarea SQL
   connection.query(query, [userId, userId], (err, tasks) => {
     if (err) {
       console.error('Error fetching tasks:', err);
@@ -210,6 +260,10 @@ router.get("/my-tasks/:userId", (req, res) => {
 
     res.json(tasksWithSla);
   });
+});
+
+router.get('/protected-route', authenticateJWT, (req, res) => {
+  res.json({ message: 'This is a protected route.', user: req.user });
 });
 
 module.exports = router;

@@ -1,18 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Navbar from '../Navbar/Navbar';
 import AddTaskModal from '../AddTaskModal/AddTaskModal';
 import EditTaskModal from '../EditTaskModal/EditTaskModal';
-
-//componenta principala pentru main page
 import {
   getTasks,
   createTask,
   updateTask,
-  deleteTaskById,
-  toggleTaskStatus
+  deleteTaskById
 } from '../../services/taskService';
 import './MainPage.css';
-
 
 const MainPage = () => {
   const [tasks, setTasks] = useState([]);
@@ -23,29 +19,14 @@ const MainPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-
   const tasksPerPage = 20;
   const tableContainerRef = useRef(null);
-
-  const user = JSON.parse(sessionStorage.getItem('user'));
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-      if (tableContainerRef.current) {
-        tableContainerRef.current.scrollTop = 0;
-      }
-    }
-  };
-
-
- // ia task-urile de la server(backend)
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/tasks?page=${currentPage}&limit=${tasksPerPage}`);
       const data = await response.json();
-
       if (Array.isArray(data.tasks)) {
         setTasks(data.tasks);
         setTotalPages(data.totalPages);
@@ -57,21 +38,19 @@ const MainPage = () => {
       console.error('Error fetching tasks:', error);
       setTasks([]);
     }
-  };
+  }, [currentPage]);
 
   useEffect(() => {
     fetchTasks();
-  }, [currentPage]);
+  }, [fetchTasks]);
 
-  //reincarca task-urile cand se schimba pagina (paginare facuta in backend cu 20 task-uri pe pagina)
   const handleTaskAdded = async () => {
     await fetchTasks();
   };
 
-  // adauga un task nou
   const handleAddTask = async (newTask) => {
     try {
-      const created = await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
+      await createTask({ ...newTask, assigned_to: newTask.selectedTeam });
       handleTaskAdded();
       setShowAddModal(false);
     } catch (err) {
@@ -79,7 +58,6 @@ const MainPage = () => {
     }
   };
 
-  // editeaza un task existent
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
@@ -90,28 +68,23 @@ const MainPage = () => {
     }
   };
 
-  // sterge un task
   const handleDeleteTask = async (taskId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
-        method: 'DELETE'
-      });
+    const confirmed = window.confirm("Are you sure you want to delete this task?");
+    if (!confirmed) return;
 
-      if (response.ok) {
-        const isLastTaskOnPage = tasks.length === 1;
-        setTasks(tasks.filter(task => task.id !== taskId));
-        if (isLastTaskOnPage && currentPage > 1) {
-          setCurrentPage(prev => prev - 1);
-        } else {
-          fetchTasks();
-        }
+    try {
+      await deleteTaskById(taskId);
+      const isLastTaskOnPage = tasks.length === 1;
+      if (isLastTaskOnPage && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      } else {
+        fetchTasks();
       }
     } catch (error) {
       console.error('Error deleting task:', error);
     }
   };
 
-  // marcheaza un task ca fiind completat
   const handleToggleComplete = async (id) => {
     try {
       const task = tasks.find(t => t.id === id);
@@ -119,7 +92,6 @@ const MainPage = () => {
         alert('Doar adminul poate închide un task!');
         return;
       }
-      // Setează status closed și completed true
       await updateTask(id, { ...task, status: 'closed', completed: true });
       handleTaskAdded();
     } catch (err) {
@@ -127,7 +99,15 @@ const MainPage = () => {
     }
   };
 
-  // sorteaza si filtreaza task-urile
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      if (tableContainerRef.current) {
+        tableContainerRef.current.scrollTop = 0;
+      }
+    }
+  };
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (sortBy === 'createdAt') return new Date(a.created_at) - new Date(b.created_at);
     if (sortBy === 'title') return a.title.localeCompare(b.title);
@@ -138,13 +118,10 @@ const MainPage = () => {
     return 0;
   });
 
-  // filtreaza task-urile dupa prioritate
   const filteredTasks = filterPriority === 'all'
     ? sortedTasks
     : sortedTasks.filter(task => task.priority === filterPriority);
 
-
-    //html pentru pagina principala
   return (
     <div>
       <Navbar />
@@ -245,8 +222,8 @@ const MainPage = () => {
                           >
                             Edit
                           </button>
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)} 
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
                             className="btn btn-outline-danger btn-sm"
                           >
                             Delete
@@ -289,7 +266,6 @@ const MainPage = () => {
           </div>
         )}
       </div>
-
 
       <AddTaskModal
         show={showAddModal}

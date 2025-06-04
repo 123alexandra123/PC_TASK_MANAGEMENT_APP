@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Navbar from '../Navbar/Navbar';
-import { getTasks, deleteTaskById, toggleTaskStatus } from '../../services/taskService';
+import { getTasks, deleteTaskById, updateTask } from '../../services/taskService';
 import './CompletedTasks.css';
 
-//componenta pentru afisarea task-urilor completate
 const CompletedTasks = () => {
   const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -12,16 +11,8 @@ const CompletedTasks = () => {
   const tableRef = useRef(null);
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
-  
-  useEffect(() => {
-    loadTasks();
-    if (tableRef.current) {
-      tableRef.current.scrollTop = 0;
-    }
-  }, [currentPage]);
-
-  // incarca task-urile completate
-  const loadTasks = async () => {
+  // încarcă task-urile completate
+  const loadTasks = useCallback(async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage, 'completed');
       setTasksState(data.tasks || []);
@@ -29,10 +20,20 @@ const CompletedTasks = () => {
     } catch (err) {
       console.error("Failed to load tasks:", err);
     }
-  };
+  }, [currentPage]);
 
-  // stergerea task-ului
+  useEffect(() => {
+    loadTasks();
+    if (tableRef.current) {
+      tableRef.current.scrollTop = 0;
+    }
+  }, [loadTasks]);
+
+  // șterge un task
   const handleDeleteTask = async (id) => {
+    const confirmed = window.confirm("Are you sure you want to delete this task?");
+    if (!confirmed) return;
+
     try {
       await deleteTaskById(id);
       await loadTasks();
@@ -41,7 +42,7 @@ const CompletedTasks = () => {
     }
   };
 
-  // inchiderea task-ului
+  // marchează un task ca "closed" dacă e admin
   const handleToggleComplete = async (id) => {
     try {
       const task = tasksState.find(t => t.id === id);
@@ -49,26 +50,27 @@ const CompletedTasks = () => {
         alert('Doar adminul poate închide un task!');
         return;
       }
-      await toggleTaskStatus(id);
+      await updateTask(id, { ...task, status: 'closed', completed: true });
       await loadTasks();
     } catch (err) {
       console.error("Failed to close task:", err);
     }
   };
 
-  // schimbarea paginii
+  // schimbă pagina
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
     }
   };
 
-  //componenta pentru afisarea task-urilor completate in html
+  // HTML
   return (
     <div>
       <Navbar />
       <div className="main-content container mt-4">
         <h2 className="fw-bold text-white mb-4">✅ Completed Tasks</h2>
+
         <div className="table-responsive task-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }} ref={tableRef}>
           <table className="table table-dark table-bordered table-hover align-middle text-white">
             <thead style={{ position: 'sticky', top: 0, backgroundColor: '#1f1f1f', zIndex: 2 }}>

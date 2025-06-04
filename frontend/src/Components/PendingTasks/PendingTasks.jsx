@@ -4,12 +4,10 @@ import EditTaskModal from '../EditTaskModal/EditTaskModal';
 import {
   getTasks,
   updateTask,
-  deleteTaskById,
-  toggleTaskStatus
+  deleteTaskById
 } from '../../services/taskService';
 import './PendingTasks.css';
 
-// componenta pentru afisarea task-urilor in asteptare
 const PendingTasks = () => {
   const [tasksState, setTasksState] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,7 +18,7 @@ const PendingTasks = () => {
   const tableRef = useRef(null);
   const isAdmin = sessionStorage.getItem('is_admin') === '1';
 
-  // incarca task-urile la deschiderea componentei
+  // încarcă task-urile în așteptare
   const loadTasks = useCallback(async () => {
     try {
       const data = await getTasks(currentPage, tasksPerPage, 'pending');
@@ -33,10 +31,16 @@ const PendingTasks = () => {
 
   useEffect(() => {
     loadTasks();
+    if (tableRef.current) {
+      tableRef.current.scrollTop = 0;
+    }
   }, [loadTasks]);
 
-  //se ocupa de stergerea task-ului
+  // șterge un task
   const handleDeleteTask = async (id) => {
+    const confirmed = window.confirm("Are you sure you want to delete this task?");
+    if (!confirmed) return;
+
     try {
       await deleteTaskById(id);
       await loadTasks();
@@ -45,7 +49,7 @@ const PendingTasks = () => {
     }
   };
 
-  // se ocupa de inchiderea task-ului
+  // închide un task (admin only)
   const handleToggleComplete = async (id) => {
     try {
       const task = tasksState.find(t => t.id === id);
@@ -60,7 +64,7 @@ const PendingTasks = () => {
     }
   };
 
-  // se ocupa de editarea task-ului
+  // salvează task-ul editat
   const handleEditTask = async (updatedTask) => {
     try {
       await updateTask(updatedTask.id, updatedTask);
@@ -71,7 +75,7 @@ const PendingTasks = () => {
     }
   };
 
-  // se ocupa de paginare
+  // schimbă pagina
   const handlePageChange = (pageNumber) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
@@ -81,12 +85,12 @@ const PendingTasks = () => {
     }
   };
 
-  //html pt componenta de task-uri in asteptare
   return (
     <div>
       <Navbar />
       <div className="main-content container mt-4">
         <h2 className="fw-bold text-white mb-4">🕒 Pending Tasks</h2>
+
         <div className="table-responsive task-table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }} ref={tableRef}>
           <table className="table table-dark table-bordered table-hover align-middle text-white">
             <thead style={{ position: 'sticky', top: 0, backgroundColor: '#1f1f1f', zIndex: 2 }}>
