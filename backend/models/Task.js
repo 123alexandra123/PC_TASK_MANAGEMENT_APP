@@ -67,23 +67,27 @@ const updateTask = (id, updatedTask) => {
       let query = `UPDATE tasks SET title = ?, description = ?, deadline = ?, priority = ?, completed = ?, assigned_to = ?, user_id = ?, status = ?`;
       let values = [title, description, deadline, priority, completed, assigned_to, user_id, status];
 
-      // daca status este 'resolved', seteaza resolved_at și in_sla
       if (status === 'resolved') {        const now = new Date();
-        // Set resolvedAt in Europe/Bucharest timezone, format MySQL
         const resolvedAt = now.toLocaleString('sv-SE', { timeZone: 'Europe/Bucharest' }).replace('T', ' ');
-        // verifica daca este in SLA
         const inSla = currentSlaDeadline && new Date(resolvedAt) <= new Date(currentSlaDeadline) ? 1 : 0;
         query += `, resolved_at = ?, in_sla = ?`;
         values.push(resolvedAt, inSla);
       } else if (status === 'in progress') {
-        //daca se revine la in progress reseteaza resolved_at si in_sla
         query += `, resolved_at = NULL, in_sla = NULL`;
-      }
-
-      //daca prioritatea s-a schimbat recalculeaza SLA deadline
+      }   
       if (priority && priority !== currentPriority) {
-        query += ', sla_deadline = ?';
-        values.push(calculateSLADeadline(priority));
+        const priorityHours = {
+          'Critical': 12,
+          'High': 27,
+          'Medium': 51,
+          'Low': 75
+        };
+        
+        // Calculeaza doar daca noua prioritate ar rezulta intr-un SLA mai scurt
+        if (priorityHours[priority] < priorityHours[currentPriority]) {
+          query += ', sla_deadline = ?';
+          values.push(calculateSLADeadline(priority));
+        }
       }
 
       query += ' WHERE id = ?';
